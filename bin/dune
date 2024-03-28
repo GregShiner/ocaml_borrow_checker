@@ -1,0 +1,4 @@
+(executable
+ (public_name ocaml_borrow_checker)
+ (name main)
+ (libraries ocaml_borrow_checker))

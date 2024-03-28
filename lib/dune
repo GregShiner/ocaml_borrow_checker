@@ -1,0 +1,2 @@
+(library
+ (name ocaml_borrow_checker))
