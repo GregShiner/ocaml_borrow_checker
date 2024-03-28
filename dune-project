@@ -5,11 +5,11 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github GregShiner/ocaml_borrow_checker))
 
-(authors "Author Name")
+(authors "Gregory Shiner" "Hoang Nguyen")
 
-(maintainers "Maintainer Name")
+(maintainers "Gregory Shiner" "Hoang Nguyen")
 
 (license LICENSE)
 
