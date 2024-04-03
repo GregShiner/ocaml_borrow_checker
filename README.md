@@ -1,7 +1,7 @@
 # Development Setup
-This package depends on Jane Street's `core` library. To install it, run the following command:
+This package depends on Jane Street's `Sexplib` library for s-exp handling. To install it, run the following command:
 ```sh
-opam install core
+opam install sexplib
 ```
 
 <!-- To use utop with `core`, add the following to your `.ocamlinit` file:
