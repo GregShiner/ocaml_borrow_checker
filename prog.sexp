@@ -1,0 +1,2 @@
+(begin
+    ((lambda (x) (+ x 1)) 5))
