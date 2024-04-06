@@ -12,6 +12,7 @@ bug-reports: "https://github.com/GregShiner/ocaml_borrow_checker/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.14"}
+  "sexplib"
   "odoc" {with-doc}
 ]
 build: [
