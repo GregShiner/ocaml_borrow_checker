@@ -8,46 +8,110 @@ module Exp = struct
     type t = 
         | Num of int
         | Id of string
-        | Plus of t * t
-        | Mult of t * t
-        | Let of string * t * t
-        | Lambda of string * t
-        | App of t * t
-        | If of t * t * t
-        | Eq of t * t
+        | Plus of {lhs: t; rhs: t}
+        | Mult of {lhs: t; rhs: t} 
+        | Let of {symbol: string; rhs: t; body: t}
+        | Lambda of {symbol: string; body: t}
+        | App of {func: t; arg: t}
+        | If of {cond: t; lhs: t; rhs: t}
+        | Eq of {lhs: t; rhs: t}
         | Begin of t list
 end
 
 module Value = struct
     type t = 
         | Num of int 
-        | Closure of string * Exp.t * env
-    and binding = string * t
+        (* | Closure of {arg: string; body: Exp.t; env: env} *)
+    and binding = 
+        | Binding of {name: string; value: t}
     and env = binding list
+
+    let pp ppf this = match this with
+        | Num n -> Format.fprintf ppf "Num(%i)" n
+        (* | Closure _ -> failwith "Not Implemented" *)
 end
+
+let mt_env = [];;
+let extend_env l r = l :: r  (* same as cons *)
+
+module Storage = struct
+    type t = int
+        (* | Cell of {location: int; value: Value.t} *)
+end
+
+type store = Storage.t list;;
+
+let mt_store = [];;
+(* let override_store l r = l :: r;;  (* same as cons *) *)
+
+type return = {value: Value.t; store: Storage.t list}
 
 let rec parse = function
     | Sexp.Atom s -> 
         (try Exp.Num (int_of_string s)
         with Failure _ -> Exp.Id s)
     | Sexp.List [Sexp.Atom "let"; Sexp.Atom id; e1; e2] -> 
-        Exp.Let (id, parse e1, parse e2)
+        Exp.Let {symbol = id; rhs = parse e1; body = parse e2}
     | Sexp.List [Sexp.Atom "+"; e1; e2] -> 
-        Exp.Plus (parse e1, parse e2)
+        Exp.Plus {lhs = parse e1; rhs = parse e2}
     | Sexp.List [Sexp.Atom "*"; e1; e2] -> 
-        Exp.Mult (parse e1, parse e2)
+        Exp.Mult {lhs = parse e1; rhs = parse e2}
     | Sexp.List [Sexp.Atom "lambda"; Sexp.List [Sexp.Atom id]; e] -> 
-        Exp.Lambda (id, parse e)
+        Exp.Lambda {symbol = id; body = parse e}
     | Sexp.List [Sexp.Atom "if"; e1; e2; e3] -> 
-        Exp.If (parse e1, parse e2, parse e3)
+        Exp.If {cond = parse e1; lhs = parse e2; rhs = parse e3}
     | Sexp.List [Sexp.Atom "="; e1; e2] -> 
-        Exp.Eq (parse e1, parse e2)
+        Exp.Eq {lhs = parse e1; rhs = parse e2}
     | Sexp.List (Sexp.Atom "begin" :: es) -> 
         Exp.Begin (List.map parse es)
     | Sexp.List [e1; e2] ->
-        Exp.App (parse e1, parse e2)
+        Exp.App {func = parse e1; arg = parse e2}
     | _ -> failwith "parse error"
 
-let parse_file filename = 
-    let sexp = Sexp.load_sexp filename in
-    parse sexp
+let extractNum ( l : Value.t ) ( r : Value.t ): int * int = 
+    match l with
+        (* | Closure _ -> failwith "Left hand side is not a number" *)
+        | Value.Num left -> match r with 
+                            | Value.Num right -> (left, right)
+                            (* | Value.Closure _ -> failwith "Right hand side is not a number" *)
+
+let numPlus (left : Value.t) (right: Value.t) : Value.t = 
+    let (l, r) = extractNum left right in
+        Value.Num(l + r)
+
+let numMult (left : Value.t) (right: Value.t) : Value.t = 
+    let (l, r) = extractNum left right in
+        Value.Num(l * r)
+
+let rec lookup ( sym : string ) ( env : Value.env ) = 
+    match env with 
+    | Binding fst :: rst -> if fst.name = sym then fst.value else lookup sym rst
+    | _ -> failwith ("free variable: " ^ sym)
+
+let rec interp (exp: Exp.t) (env: Value.env) (sto: store) : return =
+    match exp with
+    | Exp.Num n -> {value = Value.Num n; store = sto}
+    | Exp.Id i -> {value = lookup i env; store = sto}
+    | Exp.Plus p -> let l = interp p.lhs env sto in
+                        let r = interp p.rhs env l.store in
+                            {value = numPlus l.value r.value; store = r.store}
+    | Exp.Mult m -> let l = interp m.lhs env sto in
+                        let r = interp m.rhs env l.store in
+                            {value = numMult l.value r.value; store = r.store}
+    | Exp.Let l -> let rhs = interp l.rhs env sto in 
+                        interp  l.body 
+                                (extend_env 
+                                    (Value.Binding{name = l.symbol; value = rhs.value})
+                                    env) 
+                                rhs.store
+    | _ -> failwith "Not Implemented"
+
+(* let parse_file filename =  *)
+(*     let sexp = Sexp.load_sexp filename in *)
+(*     parse sexp *)
+
+let eval sexp = 
+    let sexp = Sexp.of_string sexp in
+        Format.printf "Output: %a\n%!" Value.pp (interp (parse sexp) mt_env mt_store).value
+
+let () = eval "(let x 1 (+ x 1))"
