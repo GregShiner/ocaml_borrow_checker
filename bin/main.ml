@@ -113,7 +113,7 @@ let rec interp (exp: Exp.t) (env: Value.env) (sto: store) : return =
                         let r = interp m.rhs env l.store in
                             {value = numMult l.value r.value; store = r.store}
     | Exp.Let l -> let rhs = interp l.rhs env sto in 
-                        interp  l.body 
+                        interp l.body 
                                 (extend_env 
                                     (Value.Binding{name = l.symbol; value = rhs.value})
                                     env) 
