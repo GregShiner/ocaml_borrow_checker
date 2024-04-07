@@ -1,9 +1,6 @@
-((check this (shit out))
-    #;(comments work
-        on (datums too))
+(let ((x (box 5)))
+    (let ((my-ref (! x)))
+        (begin
+            (:= my-ref 6)
+            (@ my-ref))))
 
-    #| Block comments! |# (bruh) #| nested #| ones too |# |#
-
-    ; boring ahh line comments
-    (and they can) ; go at the end of lines too
-)
