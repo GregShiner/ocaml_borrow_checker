@@ -16,6 +16,7 @@ module Exp = struct
         | If of {cond: t; lhs: t; rhs: t}
         | Eq of {lhs: t; rhs: t}
         | Begin of t list
+        | Bool of bool
     let rec pp ppf this = match this with
         | Num n -> Format.fprintf ppf "Num(%i)" n
         | Id s -> Format.fprintf ppf "Id(%s)" s
@@ -27,12 +28,14 @@ module Exp = struct
         | If i -> Format.fprintf ppf "If(%a, %a, %a)" pp i.cond pp i.lhs pp i.rhs
         | Eq e -> Format.fprintf ppf "Eq(%a, %a)" pp e.lhs pp e.rhs
         | Begin b -> Format.fprintf ppf "Begin(%a)" (Format.pp_print_list pp) b
+        | Bool b -> Format.fprintf ppf "Bool(%b)" b
 end
 
 module Value = struct
     type t = 
         | Num of int 
         | Closure of {arg: string; body: Exp.t; env: env}
+        | Bool of bool
     and binding = 
         | Binding of {name: string; value: t}
     and env = binding list
@@ -40,6 +43,7 @@ module Value = struct
     let rec pp ppf this = match this with
         | Num n -> Format.fprintf ppf "Num(%i)" n
         | Closure c -> Format.fprintf ppf "Closure(%s, %a, %a)" c.arg Exp.pp c.body pp_env c.env
+        | Bool b -> Format.fprintf ppf "Bool(%b)" b
     and pp_env ppf env = Format.fprintf ppf "[%a]" (Format.pp_print_list pp_binding) env
     and pp_binding ppf this = match this with
         | Binding b -> Format.fprintf ppf "Binding(%s, %a)" b.name pp b.value
@@ -61,6 +65,8 @@ let override_store l r = l :: r;;  (* same as cons *)
 type return = {value: Value.t; store: Storage.t list};;
 
 let rec parse = function
+    | Sexp.Atom "true" -> Exp.Bool true
+    | Sexp.Atom "false" -> Exp.Bool false
     | Sexp.Atom s -> 
         (try Exp.Num (int_of_string s)
         with Failure _ -> Exp.Id s)
@@ -85,9 +91,11 @@ let rec parse = function
 let extractNum ( l : Value.t ) ( r : Value.t ): int * int = 
     match l with
         | Closure _ -> failwith "Left hand side is not a number"
+        | Bool _ -> failwith "Left hand side is not a number"
         | Value.Num left -> match r with 
                             | Value.Num right -> (left, right)
                             | Value.Closure _ -> failwith "Right hand side is not a number"
+                            | Value.Bool _ -> failwith "Right hand side is not a number"
 
 let numPlus (left : Value.t) (right: Value.t) : Value.t = 
     let (l, r) = extractNum left right in
@@ -128,6 +136,12 @@ let rec interp (exp: Exp.t) (env: Value.env) (sto: store) : return =
                                                             c.env) 
                                                         arg.store
                                 | _ -> failwith "Not a function")
+    | Exp.Bool b -> {value = Value.Bool b; store = sto}
+    | Exp.If i -> let cond = interp i.cond env sto in
+                    (match cond.value with
+                        | Value.Bool true -> interp i.lhs env cond.store
+                        | Value.Bool false -> interp i.rhs env cond.store
+                        | _ -> failwith "Not a boolean")
     | _ -> failwith "Not Implemented"
 
 let parse_file filename = 
