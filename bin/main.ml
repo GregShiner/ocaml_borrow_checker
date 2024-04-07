@@ -110,37 +110,35 @@ let rec lookup ( sym : string ) ( env : Value.env ) =
     | Binding fst :: rst -> if fst.name = sym then fst.value else lookup sym rst
     | _ -> failwith ("free variable: " ^ sym)
 
-let rec interp (exp: Exp.t) (env: Value.env) (sto: store) : return =
+let rec interp (exp: Exp.t) (env: Value.env) : Value.t =
     match exp with
-    | Exp.Num n -> {value = Value.Num n; store = sto}
-    | Exp.Id i -> {value = lookup i env; store = sto}
-    | Exp.Plus p -> let l = interp p.lhs env sto in
-                        let r = interp p.rhs env l.store in
-                            {value = numPlus l.value r.value; store = r.store}
-    | Exp.Mult m -> let l = interp m.lhs env sto in
-                        let r = interp m.rhs env l.store in
-                            {value = numMult l.value r.value; store = r.store}
-    | Exp.Let l -> let rhs = interp l.rhs env sto in 
+    | Exp.Num n ->  Value.Num n
+    | Exp.Id i ->  lookup i env
+    | Exp.Plus p -> let l = interp p.lhs env in
+                        let r = interp p.rhs env in
+                             numPlus l r
+    | Exp.Mult m -> let l = interp m.lhs env in
+                        let r = interp m.rhs env in
+                             numMult l r
+    | Exp.Let l -> let rhs = interp l.rhs env in 
                         interp l.body 
                                 (extend_env 
-                                    (Value.Binding{name = l.symbol; value = rhs.value})
+                                    (Value.Binding{name = l.symbol; value = rhs})
                                     env) 
-                                rhs.store
-    | Exp.Lambda l -> {value = Value.Closure{arg = l.symbol; body = l.body; env = env}; store = sto}
-    | Exp.App a -> let func = interp a.func env sto in
-                        let arg = interp a.arg env func.store in
-                            (match func.value with
+    | Exp.Lambda l -> Value.Closure{arg = l.symbol; body = l.body; env = env}
+    | Exp.App a -> let func = interp a.func env in
+                        let arg = interp a.arg env in
+                            (match func with
                                 | Value.Closure c -> interp c.body 
                                                         (extend_env 
-                                                            (Value.Binding{name = c.arg; value = arg.value})
+                                                            (Value.Binding{name = c.arg; value = arg})
                                                             c.env) 
-                                                        arg.store
                                 | _ -> failwith "Not a function")
-    | Exp.Bool b -> {value = Value.Bool b; store = sto}
-    | Exp.If i -> let cond = interp i.cond env sto in
-                    (match cond.value with
-                        | Value.Bool true -> interp i.lhs env cond.store
-                        | Value.Bool false -> interp i.rhs env cond.store
+    | Exp.Bool b ->  Value.Bool b
+    | Exp.If i -> let cond = interp i.cond env in
+                    (match cond with
+                        | Value.Bool true -> interp i.lhs env
+                        | Value.Bool false -> interp i.rhs env
                         | _ -> failwith "Not a boolean")
     | _ -> failwith "Not Implemented"
 
@@ -150,6 +148,6 @@ let parse_file filename =
 
 let eval sexp = 
     let sexp = Sexp.of_string sexp in
-        Format.printf "Output: %a\n%!" Value.pp (interp (parse sexp) mt_env mt_store).value
+        Format.printf "Output: %a\n%!" Value.pp (interp (parse sexp) mt_env)
 
 let () = eval "(let ((x 1)) (+ x 1))"
