@@ -3,3 +3,7 @@
  (name main)
  (libraries ocaml_borrow_checker sexplib)
  (preprocess (pps ppx_jane)))
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))

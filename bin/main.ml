@@ -16,41 +16,55 @@ module Exp = struct
         | If of {cond: t; lhs: t; rhs: t}
         | Eq of {lhs: t; rhs: t}
         | Begin of t list
+    let rec pp ppf this = match this with
+        | Num n -> Format.fprintf ppf "Num(%i)" n
+        | Id s -> Format.fprintf ppf "Id(%s)" s
+        | Plus p -> Format.fprintf ppf "Plus(%a, %a)" pp p.lhs pp p.rhs
+        | Mult m -> Format.fprintf ppf "Mult(%a, %a)" pp m.lhs pp m.rhs
+        | Let l -> Format.fprintf ppf "Let(%s, %a, %a)" l.symbol pp l.rhs pp l.body
+        | Lambda l -> Format.fprintf ppf "Lambda(%s, %a)" l.symbol pp l.body
+        | App a -> Format.fprintf ppf "App(%a, %a)" pp a.func pp a.arg
+        | If i -> Format.fprintf ppf "If(%a, %a, %a)" pp i.cond pp i.lhs pp i.rhs
+        | Eq e -> Format.fprintf ppf "Eq(%a, %a)" pp e.lhs pp e.rhs
+        | Begin b -> Format.fprintf ppf "Begin(%a)" (Format.pp_print_list pp) b
 end
 
 module Value = struct
     type t = 
         | Num of int 
-        (* | Closure of {arg: string; body: Exp.t; env: env} *)
+        | Closure of {arg: string; body: Exp.t; env: env}
     and binding = 
         | Binding of {name: string; value: t}
     and env = binding list
 
-    let pp ppf this = match this with
+    let rec pp ppf this = match this with
         | Num n -> Format.fprintf ppf "Num(%i)" n
-        (* | Closure _ -> failwith "Not Implemented" *)
+        | Closure c -> Format.fprintf ppf "Closure(%s, %a, %a)" c.arg Exp.pp c.body pp_env c.env
+    and pp_env ppf env = Format.fprintf ppf "[%a]" (Format.pp_print_list pp_binding) env
+    and pp_binding ppf this = match this with
+        | Binding b -> Format.fprintf ppf "Binding(%s, %a)" b.name pp b.value
 end
 
 let mt_env = [];;
 let extend_env l r = l :: r  (* same as cons *)
 
 module Storage = struct
-    type t = int
-        (* | Cell of {location: int; value: Value.t} *)
-end
+    type t = 
+        | Cell of {location: int; value: Value.t}
+end;;
 
 type store = Storage.t list;;
 
 let mt_store = [];;
-(* let override_store l r = l :: r;;  (* same as cons *) *)
+let override_store l r = l :: r;;  (* same as cons *)
 
-type return = {value: Value.t; store: Storage.t list}
+type return = {value: Value.t; store: Storage.t list};;
 
 let rec parse = function
     | Sexp.Atom s -> 
         (try Exp.Num (int_of_string s)
         with Failure _ -> Exp.Id s)
-    | Sexp.List [Sexp.Atom "let"; Sexp.Atom id; e1; e2] -> 
+    | Sexp.List [Sexp.Atom "let"; Sexp.List [Sexp.List [Sexp.Atom id; e1]]; e2] -> 
         Exp.Let {symbol = id; rhs = parse e1; body = parse e2}
     | Sexp.List [Sexp.Atom "+"; e1; e2] -> 
         Exp.Plus {lhs = parse e1; rhs = parse e2}
@@ -70,10 +84,10 @@ let rec parse = function
 
 let extractNum ( l : Value.t ) ( r : Value.t ): int * int = 
     match l with
-        (* | Closure _ -> failwith "Left hand side is not a number" *)
+        | Closure _ -> failwith "Left hand side is not a number"
         | Value.Num left -> match r with 
                             | Value.Num right -> (left, right)
-                            (* | Value.Closure _ -> failwith "Right hand side is not a number" *)
+                            | Value.Closure _ -> failwith "Right hand side is not a number"
 
 let numPlus (left : Value.t) (right: Value.t) : Value.t = 
     let (l, r) = extractNum left right in
@@ -104,14 +118,24 @@ let rec interp (exp: Exp.t) (env: Value.env) (sto: store) : return =
                                     (Value.Binding{name = l.symbol; value = rhs.value})
                                     env) 
                                 rhs.store
+    | Exp.Lambda l -> {value = Value.Closure{arg = l.symbol; body = l.body; env = env}; store = sto}
+    | Exp.App a -> let func = interp a.func env sto in
+                        let arg = interp a.arg env func.store in
+                            (match func.value with
+                                | Value.Closure c -> interp c.body 
+                                                        (extend_env 
+                                                            (Value.Binding{name = c.arg; value = arg.value})
+                                                            c.env) 
+                                                        arg.store
+                                | _ -> failwith "Not a function")
     | _ -> failwith "Not Implemented"
 
-(* let parse_file filename =  *)
-(*     let sexp = Sexp.load_sexp filename in *)
-(*     parse sexp *)
+let parse_file filename = 
+    let sexp = Sexp.load_sexp filename in
+    parse sexp
 
 let eval sexp = 
     let sexp = Sexp.of_string sexp in
         Format.printf "Output: %a\n%!" Value.pp (interp (parse sexp) mt_env mt_store).value
 
-let () = eval "(let x 1 (+ x 1))"
+let () = eval "(let ((x 1)) (+ x 1))"
