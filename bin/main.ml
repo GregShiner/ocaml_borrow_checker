@@ -124,8 +124,8 @@ let extractNum (l : Value.t) (r : Value.t) : int * int =
   | Value.Num left -> (
       match r with
       | Value.Num right -> (left, right)
-      | err -> runtime_failure "Right hand side is not a number" err)
-  | err -> runtime_failure "Left hand side is not a number" err
+      | err -> runtime_failure "Right hand side is not a number " err)
+  | err -> runtime_failure "Left hand side is not a number " err
 
 let numPlus (left : Value.t) (right : Value.t) : Value.t =
   let l, r = extractNum left right in
@@ -242,4 +242,5 @@ let eval sexp =
   let sexp = Sexp.of_string sexp in
   Format.printf "Output: %a\n%!" Value.pp (interp (parse sexp) mt_env)
 
-let () = eval "(let ((x 1)) (+ x 1))"
+(* let () = eval "(let ((x 1)) (+ x 1))" *)
+let () = Format.printf "Output: %a\n%!" Value.pp (interp (parse_file "test.sexp") mt_env)
