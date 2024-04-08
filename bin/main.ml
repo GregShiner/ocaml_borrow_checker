@@ -56,10 +56,12 @@ module Value = struct
     | Ref of t
       (* Ref represents an immutable borrow of a value on the heap (can only be created for boxes) *)
     | MutRef of t
-  (* MutRef represents a mutable borrow of a value on the heap (can only be created for boxes) *)
+      (* MutRef represents a mutable borrow of a value on the heap (can only be created for boxes) *)
+    | Moved
 
-  and binding = Binding of { name : string; value : t }
-  and env = binding list
+  (* and binding = Binding of { name : string; value : t } *)
+  (* and env = binding list *)
+  and env = (string, t) Hashtbl.t
 
   let rec pp ppf this =
     match this with
@@ -71,20 +73,26 @@ module Value = struct
     | Box l -> Format.fprintf ppf "Box(%i)" l
     | Ref r -> Format.fprintf ppf "Ref(%a)" pp r
     | MutRef r -> Format.fprintf ppf "MutRef(%a)" pp r
+    | Moved -> Format.fprintf ppf "Moved"
 
   and pp_env ppf env =
-    Format.fprintf ppf "[%a]" (Format.pp_print_list pp_binding) env
+    Format.printf "{";
+    Hashtbl.iter (fun x y -> Format.fprintf ppf "%s -> %a" x pp y) env;
+    Format.printf "}"
 
-  and pp_binding ppf this =
-    match this with
-    | Binding b -> Format.fprintf ppf "Binding(%s, %a)" b.name pp b.value
+  (* and pp_binding ppf this = *)
+  (*   match this with *)
+  (*   | Binding b -> Format.fprintf ppf "Binding(%s, %a)" b.name pp b.value *)
 end
 
 type storage = (int, Value.t) Hashtbl.t
 
 let (store : storage) = Hashtbl.create 100
-let mt_env = []
-let extend_env l r = l :: r (* same as cons *)
+let (mt_env : Value.env) = Hashtbl.create 100
+
+let extend_env sym value env =
+  Hashtbl.replace env sym value;
+  env
 
 let runtime_failure msg value =
   failwith (msg ^ Format.asprintf "%a" Value.pp value)
@@ -136,9 +144,9 @@ let numMult (left : Value.t) (right : Value.t) : Value.t =
   Value.Num (l * r)
 
 let rec lookup (sym : string) (env : Value.env) =
-  match env with
-  | Binding fst :: rst -> if fst.name = sym then fst.value else lookup sym rst
-  | _ -> failwith ("free variable: " ^ sym)
+  match Hashtbl.find_opt env sym with
+  | Some value -> value
+  | None -> failwith ("free variable: " ^ sym)
 
 let get_nex_loc (store : storage) =
   (* Find the next available location in the store with a linear search *)
@@ -181,17 +189,14 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       let r = interp m.rhs env in
       numMult l r
   | Exp.Let l ->
-      let rhs = interp l.rhs env in
-      interp l.body
-        (extend_env (Value.Binding { name = l.symbol; value = rhs }) env)
+      let value = interp l.rhs env in
+      interp l.body (extend_env l.symbol value env)
   | Exp.Lambda l -> Value.Closure { arg = l.symbol; body = l.body; env }
   | Exp.App a -> (
       let func = interp a.func env in
-      let arg = interp a.arg env in
+      let arg_val = interp a.arg env in
       match func with
-      | Value.Closure c ->
-          interp c.body
-            (extend_env (Value.Binding { name = c.arg; value = arg }) c.env)
+      | Value.Closure c -> interp c.body (extend_env c.arg arg_val c.env)
       | _ -> failwith "Not a function")
   | Exp.Bool b -> Value.Bool b
   | Exp.If i -> (
@@ -243,4 +248,6 @@ let eval sexp =
   Format.printf "Output: %a\n%!" Value.pp (interp (parse sexp) mt_env)
 
 (* let () = eval "(let ((x 1)) (+ x 1))" *)
-let () = Format.printf "Output: %a\n%!" Value.pp (interp (parse_file "test.sexp") mt_env)
+let () =
+  Format.printf "Output: %a\n%!" Value.pp
+    (interp (parse_file "test.sexp") mt_env)
