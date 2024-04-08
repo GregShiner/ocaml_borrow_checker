@@ -86,6 +86,12 @@ let (store : storage) = Hashtbl.create 100
 let mt_env = []
 let extend_env l r = l :: r (* same as cons *)
 
+let runtime_failure msg value =
+  failwith (msg ^ Format.asprintf "%a" Value.pp value)
+
+let handle_result (value : Value.t) (r : ('a, string) result) : 'a =
+  match r with Ok v -> v | Error e -> runtime_failure e value
+
 let rec parse = function
   | Sexp.Atom "true" -> Exp.Bool true
   | Sexp.Atom "false" -> Exp.Bool false
@@ -118,8 +124,8 @@ let extractNum (l : Value.t) (r : Value.t) : int * int =
   | Value.Num left -> (
       match r with
       | Value.Num right -> (left, right)
-      | _ -> failwith "Right hand side is not a number")
-  | _ -> failwith "Left hand side is not a number"
+      | err -> runtime_failure "Right hand side is not a number" err)
+  | err -> runtime_failure "Left hand side is not a number" err
 
 let numPlus (left : Value.t) (right : Value.t) : Value.t =
   let l, r = extractNum left right in
@@ -141,22 +147,26 @@ let get_nex_loc (store : storage) =
   in
   find_next_loc 0
 
-let unbox (v : Value.t) : Value.t =
+let unbox (v : Value.t) : (Value.t, string) result =
   match v with
   | Value.Box loc -> (
       match Hashtbl.find_opt store loc with
-      | Some v -> v
-      | None -> failwith "PANIC: Dereferencing a non-existent box")
-  | _ -> failwith "Not a box"
+      | Some v -> Ok v
+      | None -> Error "PANIC: Unboxing a non-existent box: ")
+  | _ -> Error "Not a box when unboxing: "
 
-let set (lhs : Value.t) (rhs : Value.t) : Value.t =
-  (match lhs with
-  | Value.Box loc -> (
-      match Hashtbl.find_opt store loc with
-      | Some _ -> Hashtbl.replace store loc rhs
-      | None -> failwith "PANIC: Setting a non-existent box")
-  | _ -> failwith "Not a box");
-  rhs
+let set (lhs : Value.t) (rhs : Value.t) : (Value.t, string) result =
+  match lhs with
+  | Value.MutRef r -> (
+      match r with
+      | Value.Box loc -> (
+          match Hashtbl.find_opt store loc with
+          | Some _ ->
+              Hashtbl.replace store loc rhs;
+              Ok rhs
+          | None -> Error "PANIC: Setting a non-existent box: ")
+      | _ -> Error "PANIC: MutRef is not of a box: ")
+  | _ -> Error "Cannot set a non-mutable reference: "
 
 let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
   match exp with
@@ -203,20 +213,21 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       Value.Box loc
   | Exp.Ref r -> (
       let v = interp r env in
-      match v with Value.Box loc -> Value.Ref v | _ -> failwith "Not a box")
+      match v with Value.Box loc -> Value.Ref v | _ -> failwith "Not a box: ")
   | Exp.MutRef r -> (
       let v = interp r env in
-      match v with Value.Box loc -> Value.MutRef v | _ -> failwith "Not a box")
+      match v with
+      | Value.Box loc -> Value.MutRef v
+      | _ -> failwith "Not a box: ")
   | Exp.Deref d -> (
       let v = interp d env in
       match v with
-      | Value.Ref r -> unbox r
-      | Value.MutRef r -> unbox r
+      | Value.Ref r | Value.MutRef r -> unbox r |> handle_result v
       | _ -> failwith "Not a reference")
   | Exp.Set s ->
       let lhs = interp s.lhs env in
       let rhs = interp s.rhs env in
-      set lhs rhs
+      set lhs rhs |> handle_result lhs
   | _ -> failwith "Not Implemented"
 
 let parse_file filename =
