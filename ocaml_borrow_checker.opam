@@ -13,6 +13,7 @@ depends: [
   "ocaml"
   "dune" {>= "3.14"}
   "sexplib"
+  "ppx_jane"
   "odoc" {with-doc}
 ]
 build: [

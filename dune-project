@@ -19,7 +19,7 @@
  (name ocaml_borrow_checker)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune sexplib)
+ (depends ocaml dune sexplib ppx_jane)
  (tags
   (topics "to describe" your project)))
 
