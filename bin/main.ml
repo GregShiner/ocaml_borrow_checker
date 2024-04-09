@@ -209,7 +209,13 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       let arg_val = interp a.arg env in
       match func with
       | Value.Closure c ->
-          interp c.body (move_symbol c.arg a.arg arg_val env c.env)
+          let value =
+            interp c.body (move_symbol c.arg a.arg arg_val env c.env)
+          in
+          (match lookup c.arg c.env with
+          | Value.Box b -> Hashtbl.remove store b
+          | _ -> ());
+          value
       | _ -> failwith "Not a function")
   | Exp.Bool b -> Value.Bool b
   | Exp.If i -> (
