@@ -218,12 +218,10 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       Value.Box loc
   | Exp.Ref r -> (
       let v = interp r env in
-      match v with Value.Box loc -> Value.Ref v | _ -> failwith "Not a box: ")
+      match v with Value.Box _ -> Value.Ref v | _ -> failwith "Not a box: ")
   | Exp.MutRef r -> (
       let v = interp r env in
-      match v with
-      | Value.Box loc -> Value.MutRef v
-      | _ -> failwith "Not a box: ")
+      match v with Value.Box _ -> Value.MutRef v | _ -> failwith "Not a box: ")
   | Exp.Deref d -> (
       let v = interp d env in
       match v with
@@ -233,7 +231,6 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       let lhs = interp s.lhs env in
       let rhs = interp s.rhs env in
       set lhs rhs |> handle_result lhs
-  | _ -> failwith "Not Implemented"
 
 let parse_file filename =
   let sexp = Sexp.load_sexp filename in
