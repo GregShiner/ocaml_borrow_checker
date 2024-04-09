@@ -1,13 +1,30 @@
 (let ((x (box 5)))
     (let ((my-ref (! x)))
-        (begin
-            (:= my-ref 6)
-            (@ my-ref))))
-
+        (let ((func (lambda (x) x)))
+            (begin
+                (:= my-ref 6)
+                (let ((x x)) 
+                    x)
+                (func my-ref); TODO fix using reference of a moved owned value 
+                #;(let ((z 1))
+                    z)))))
+; (let ((x (box 5)))
+;     (let ((my-ref (! x)))
+;         (begin
+;             (:= my-ref 6)
+;             (let ((z my-ref))
+;                 z)
+;             (@ my-ref))))
+; (let ((x (box 5)))
+;     (let ((y x))
+;         (begin
+;             (:= my-ref 6)
+;             (@ my-ref))))
 ; (list (:= my-ref 6) (@ my-ref))
 ; (cons (:= my-ref 6)(A) (cons (@ my-ref)(B) []))
 ; foldl (fun (fun Num0 (A)) (B))
 ; (interp (interp A env) B env)
+
 ; so the way to fix this is to have them share the same enviroment
 ; 198 in main.ml
 ; we need to change implementation of begin to something else instead of this 

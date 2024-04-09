@@ -106,7 +106,9 @@ let rec parse = function
   | Sexp.Atom s -> ( try Exp.Num (int_of_string s) with Failure _ -> Exp.Id s)
   | Sexp.List
       [ Sexp.Atom "let"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ] ->
-      Exp.Let { symbol = id; rhs = parse e1; body = parse e2 }
+      Exp.App
+        { func = Exp.Lambda { symbol = id; body = parse e2 }; arg = parse e1 }
+      (* Exp.Let { symbol = id; rhs = parse e1; body = parse e2 } *)
   | Sexp.List [ Sexp.Atom "+"; e1; e2 ] ->
       Exp.Plus { lhs = parse e1; rhs = parse e2 }
   | Sexp.List [ Sexp.Atom "*"; e1; e2 ] ->
@@ -145,7 +147,10 @@ let numMult (left : Value.t) (right : Value.t) : Value.t =
 
 let rec lookup (sym : string) (env : Value.env) =
   match Hashtbl.find_opt env sym with
-  | Some value -> value
+  | Some value -> (
+      match value with
+      | Moved -> failwith ("Usage of Moved Value: " ^ sym)
+      | rest -> rest)
   | None -> failwith ("free variable: " ^ sym)
 
 let get_nex_loc (store : storage) =
@@ -176,6 +181,12 @@ let set (lhs : Value.t) (rhs : Value.t) : (Value.t, string) result =
       | _ -> Error "PANIC: MutRef is not of a box: ")
   | _ -> Error "Cannot set a non-mutable reference: "
 
+let move_symbol (sym : string) (oldsym : Exp.t) (value : Value.t)
+    (envFrom : Value.env) (envTo : Value.env) =
+  (match oldsym with Exp.Id i -> Hashtbl.replace envFrom i Moved | _ -> ());
+  Hashtbl.replace envTo sym value;
+  envTo
+
 let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
   match exp with
   | Exp.Num n -> Value.Num n
@@ -190,13 +201,15 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       numMult l r
   | Exp.Let l ->
       let value = interp l.rhs env in
-      interp l.body (extend_env l.symbol value env)
-  | Exp.Lambda l -> Value.Closure { arg = l.symbol; body = l.body; env }
+      interp l.body (move_symbol l.symbol l.rhs value env env)
+  | Exp.Lambda l ->
+      Value.Closure { arg = l.symbol; body = l.body; env = Hashtbl.copy env }
   | Exp.App a -> (
       let func = interp a.func env in
       let arg_val = interp a.arg env in
       match func with
-      | Value.Closure c -> interp c.body (extend_env c.arg arg_val c.env)
+      | Value.Closure c ->
+          interp c.body (move_symbol c.arg a.arg arg_val env c.env)
       | _ -> failwith "Not a function")
   | Exp.Bool b -> Value.Bool b
   | Exp.If i -> (
@@ -218,15 +231,19 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       Value.Box loc
   | Exp.Ref r -> (
       let v = interp r env in
-      match v with Value.Box _ -> Value.Ref v | _ -> failwith "Not a box: ")
+      match v with
+      | Value.Box _ -> Value.Ref v
+      | rest -> runtime_failure "Not a box: " rest)
   | Exp.MutRef r -> (
       let v = interp r env in
-      match v with Value.Box _ -> Value.MutRef v | _ -> failwith "Not a box: ")
+      match v with
+      | Value.Box _ -> Value.MutRef v
+      | rest -> runtime_failure "Not a box: " rest)
   | Exp.Deref d -> (
       let v = interp d env in
       match v with
       | Value.Ref r | Value.MutRef r -> unbox r |> handle_result v
-      | _ -> failwith "Not a reference")
+      | rest -> runtime_failure "Not a reference: " rest)
   | Exp.Set s ->
       let lhs = interp s.lhs env in
       let rhs = interp s.rhs env in
@@ -248,3 +265,9 @@ let eval sexp =
 let () =
   Format.printf "Output: %a\n%!" Value.pp
     (interp (parse_file "test.sexp") mt_env)
+
+let () =
+  Format.printf "Store: \n";
+  Format.printf "{\n";
+  Hashtbl.iter (fun x y -> Format.printf "%i -> %a\n" x Value.pp y) store;
+  Format.printf "}\n"
