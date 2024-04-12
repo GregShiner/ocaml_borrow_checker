@@ -19,10 +19,4 @@ let () =
   Format.printf "Output: %a\n%!" Interp.Value.pp
     (Interp.interp (parse_file "test.sexp") Interp.mt_env)
 
-let () =
-  Format.printf "Store: \n";
-  Format.printf "{\n";
-  Hashtbl.iter
-    (fun x y -> Format.printf "%i -> %a\n" x Interp.Value.pp y)
-    Interp.store;
-  Format.printf "}\n"
+let () = assert (Hashtbl.length Interp.store = 0)
