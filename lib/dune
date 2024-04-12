@@ -1,2 +1,9 @@
 (library
- (name ocaml_borrow_checker))
+ (name ocaml_borrow_checker)
+ (libraries sexplib)
+ (modules parse interp analyze)
+ (preprocess (pps ppx_jane)))
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
