@@ -8,7 +8,7 @@
                 (@ my-ref)))))
 ; (let-rec ((mult (lambda (x y) (if (= x 0) 0 (+ y (mult (- x 1) y))))))
 ;     (mult 5 6))
-(let-rec ((mult (lambda (x) (lambda (y) (if (= x 0) 0 (+ y (mult (+ x -1) y)))))))
+(let-rec ((mult (lambda (x) (lambda (y) (if (= x 0) 0 (+ y ((mult (+ x -1)) y)))))))
     (let ((m (mult 5)))
         (m 6)))
 ; (let ((x 5))
