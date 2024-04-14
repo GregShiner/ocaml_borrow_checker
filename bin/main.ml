@@ -16,6 +16,8 @@ let eval sexp =
 
 (* let () = eval "(let ((x 1)) (+ x 1))" *)
 let () =
+  Format.printf "Output: %a\n%!" Analyze.AnalVal.pp
+    (Analyze.analyze (parse_file "test.sexp") Analyze.mt_env);
   Format.printf "Output: %a\n%!" Interp.Value.pp
     (Interp.interp (parse_file "test.sexp") Interp.mt_env)
 
