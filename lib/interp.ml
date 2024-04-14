@@ -110,7 +110,10 @@ let set (lhs : Value.t) (rhs : Value.t) : (Value.t, string) result =
 
 let move_symbol (sym : string) (oldsym : Exp.t) (value : Value.t)
     (envFrom : Value.env) (envTo : Value.env) =
-  (match oldsym with Exp.Id i -> Hashtbl.replace envFrom i Moved | _ -> ());
+  (match value with
+  | Value.Box _ -> (
+      match oldsym with Exp.Id i -> Hashtbl.replace envFrom i Moved | _ -> ())
+  | _ -> ());
   Hashtbl.replace envTo sym value;
   envTo
 
@@ -126,9 +129,6 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       let l = interp m.lhs env in
       let r = interp m.rhs env in
       numMult l r
-  | Exp.Let l ->
-      let value = interp l.rhs env in
-      interp l.body (move_symbol l.symbol l.rhs value env env)
   | Exp.Lambda l ->
       Value.Closure { arg = l.symbol; body = l.body; env = Hashtbl.copy env }
   | Exp.App a -> (

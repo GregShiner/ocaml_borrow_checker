@@ -6,7 +6,6 @@ module Exp = struct
     | Id of string
     | Plus of { lhs : t; rhs : t }
     | Mult of { lhs : t; rhs : t }
-    | Let of { symbol : string; rhs : t; body : t }
     | Lambda of { symbol : string; body : t }
     | App of { func : t; arg : t }
     | If of { cond : t; lhs : t; rhs : t }
@@ -25,7 +24,6 @@ module Exp = struct
     | Id s -> Format.fprintf ppf "Id(%s)" s
     | Plus p -> Format.fprintf ppf "Plus(%a, %a)" pp p.lhs pp p.rhs
     | Mult m -> Format.fprintf ppf "Mult(%a, %a)" pp m.lhs pp m.rhs
-    | Let l -> Format.fprintf ppf "Let(%s, %a, %a)" l.symbol pp l.rhs pp l.body
     | Lambda l -> Format.fprintf ppf "Lambda(%s, %a)" l.symbol pp l.body
     | App a -> Format.fprintf ppf "App(%a, %a)" pp a.func pp a.arg
     | If i -> Format.fprintf ppf "If(%a, %a, %a)" pp i.cond pp i.lhs pp i.rhs
@@ -39,6 +37,21 @@ module Exp = struct
     | Set s -> Format.fprintf ppf "Set(%a, %a)" pp s.lhs pp s.rhs
 end
 
+(* (define mk-rec-fun
+   `{lambda {body-proc}
+      {let {[fX {lambda {fX}
+                  {let {[f {lambda {x}
+                             {{fX fX} x}}]}
+                    {body-proc f}}}]}
+        {fX fX}}}) *)
+let mk_rec_fun =
+  "(lambda (body-proc)\n\
+  \             (let ((fX (box (lambda (fX)\n\
+  \                         (let ((F (box (lambda (x)\n\
+  \                                    ((fX fX) x)))))\n\
+  \                             (body-proc (@ (& F))))))))\n\
+  \                 ((@ (& fX)) (@ (& fX)))))"
+
 let rec parse = function
   | Sexp.Atom "true" -> Exp.Bool true
   | Sexp.Atom "false" -> Exp.Bool false
@@ -48,6 +61,13 @@ let rec parse = function
       Exp.App
         { func = Exp.Lambda { symbol = id; body = parse e2 }; arg = parse e1 }
       (* Exp.Let { symbol = id; rhs = parse e1; body = parse e2 } *)
+  | Sexp.List
+      [ Sexp.Atom "let-rec"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ]
+    ->
+      parse
+        (Sexp.of_string
+           (Printf.sprintf "(let ((%s (%s (lambda (%s) %s)))) %s)" id mk_rec_fun
+              id (Sexp.to_string e1) (Sexp.to_string e2)))
   | Sexp.List [ Sexp.Atom "+"; e1; e2 ] ->
       Exp.Plus { lhs = parse e1; rhs = parse e2 }
   | Sexp.List [ Sexp.Atom "*"; e1; e2 ] ->
