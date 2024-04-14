@@ -72,7 +72,7 @@ let numMult (left : Value.t) (right : Value.t) : Value.t =
   let l, r = extractNum left right in
   Value.Num (l * r)
 
-let rec lookup (sym : string) (env : Value.env) =
+let lookup (sym : string) (env : Value.env) =
   match Hashtbl.find_opt env sym with
   | Some value -> (
       match value with
@@ -110,10 +110,15 @@ let set (lhs : Value.t) (rhs : Value.t) : (Value.t, string) result =
 
 let move_symbol (sym : string) (oldsym : Exp.t) (value : Value.t)
     (envFrom : Value.env) (envTo : Value.env) =
-  (match value with
-  | Value.Box _ -> (
-      match oldsym with Exp.Id i -> Hashtbl.replace envFrom i Moved | _ -> ())
+  (match oldsym with
+  | Exp.Id i -> (
+      match Hashtbl.find_opt envFrom i with
+      | Some (Value.Box _) ->
+          Hashtbl.replace envFrom i Moved;
+          Hashtbl.replace envTo i Moved
+      | _ -> ())
   | _ -> ());
+
   Hashtbl.replace envTo sym value;
   envTo
 
