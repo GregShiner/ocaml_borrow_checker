@@ -136,7 +136,13 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       numMult l r
   | Exp.Let l ->
       let value = interp l.rhs env in
-      interp l.body (move_symbol l.symbol l.rhs value env env)
+      let return_val =
+        interp l.body (move_symbol l.symbol l.rhs value env env)
+      in
+      (match lookup l.symbol env with
+      | Value.Box b -> Hashtbl.remove store b
+      | _ -> ());
+      return_val
   | Exp.Lambda l ->
       Value.Closure { arg = l.symbol; body = l.body; env = Hashtbl.copy env }
   | Exp.App a -> (
