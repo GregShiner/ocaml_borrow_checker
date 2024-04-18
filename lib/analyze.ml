@@ -125,6 +125,9 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
       let _ = analyze m.lhs env in
       let _ = analyze m.rhs env in
       AnalVal.Num
+  | Exp.Let l ->
+      let value = analyze l.rhs env in
+      analyze l.body (move_symbol l.symbol l.rhs value env env)
   | Exp.Lambda l ->
       AnalVal.Closure { arg = l.symbol; body = l.body; env = Hashtbl.copy env }
   | Exp.App a -> (

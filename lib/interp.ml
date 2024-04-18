@@ -134,6 +134,9 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       let l = interp m.lhs env in
       let r = interp m.rhs env in
       numMult l r
+  | Exp.Let l ->
+      let value = interp l.rhs env in
+      interp l.body (move_symbol l.symbol l.rhs value env env)
   | Exp.Lambda l ->
       Value.Closure { arg = l.symbol; body = l.body; env = Hashtbl.copy env }
   | Exp.App a -> (
