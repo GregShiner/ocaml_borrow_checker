@@ -10,6 +10,7 @@ module Exp = struct
     | App of { func : t; arg : t }
     | If of { cond : t; lhs : t; rhs : t }
     | Eq of { lhs : t; rhs : t }
+    | Let of { symbol : string; rhs : t; body : t }
     | Begin of t list
     | Bool of bool
     | Ref of t
@@ -35,6 +36,7 @@ module Exp = struct
     | MutRef r -> Format.fprintf ppf "MutRef(%a)" pp r
     | Box b -> Format.fprintf ppf "Box(%a)" pp b
     | Unbox u -> Format.fprintf ppf "Unbox(%a)" pp u
+    | Let l -> Format.fprintf ppf "Let(%s, %a, %a)" l.symbol pp l.rhs pp l.body
     | Deref d -> Format.fprintf ppf "Deref(%a)" pp d
     | Set s -> Format.fprintf ppf "Set(%a, %a)" pp s.lhs pp s.rhs
 end
@@ -60,9 +62,7 @@ let rec parse = function
   | Sexp.Atom s -> ( try Exp.Num (int_of_string s) with Failure _ -> Exp.Id s)
   | Sexp.List
       [ Sexp.Atom "let"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ] ->
-      Exp.App
-        { func = Exp.Lambda { symbol = id; body = parse e2 }; arg = parse e1 }
-      (* Exp.Let { symbol = id; rhs = parse e1; body = parse e2 } *)
+      Exp.Let { symbol = id; rhs = parse e1; body = parse e2 }
   | Sexp.List
       [ Sexp.Atom "let-rec"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ]
     ->

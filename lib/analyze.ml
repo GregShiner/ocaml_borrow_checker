@@ -73,8 +73,8 @@ let get_nex_loc (store : storage) =
 
 let unbox (v : AnalVal.t) : (AnalVal.t, string) result =
   match v with
-  | AnalVal.Box loc -> (
-      match Hashtbl.find_opt store loc with
+  | AnalVal.Box b -> (
+      match Hashtbl.find_opt store b with
       | Some v -> Ok v
       | None -> Error "PANIC: Unboxing a non-existent box: ")
   | _ -> Error "Not a box when unboxing: "
@@ -83,8 +83,8 @@ let set (lhs : AnalVal.t) (rhs : AnalVal.t) : (AnalVal.t, string) result =
   match lhs with
   | AnalVal.MutRef r -> (
       match r with
-      | AnalVal.Box loc -> (
-          match Hashtbl.find_opt store loc with
+      | AnalVal.Box b -> (
+          match Hashtbl.find_opt store b with
           (* Check that the types of the two values are the same *)
           | Some prev_value ->
               if prev_value = rhs then Ok rhs
@@ -110,6 +110,26 @@ let move_symbol (sym : string) (oldsym : Exp.t) (value : AnalVal.t)
   Hashtbl.replace envTo sym value;
   envTo
 
+let check_borrow (loc : location) (isMutable : bool) (env : AnalVal.env) =
+  let check _ (value : AnalVal.t) =
+    match isMutable with
+    | true -> (
+        match value with
+        | AnalVal.MutRef (AnalVal.Box l) when l = loc ->
+            failwith "can not create multiple mutable reference"
+        | AnalVal.Ref (AnalVal.Box l) when l = loc ->
+            failwith
+              "can not create mutable reference while immutable reference exist"
+        | _ -> ())
+    | false -> (
+        match value with
+        | AnalVal.MutRef (AnalVal.Box l) when l = loc ->
+            failwith
+              "can not create immutable reference while mutable reference exist"
+        | _ -> ())
+  in
+  Hashtbl.iter check env
+
 let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
   match exp with
   | Exp.Num _ -> AnalVal.Num
@@ -122,6 +142,9 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
       let _ = analyze m.lhs env in
       let _ = analyze m.rhs env in
       AnalVal.Num
+  | Exp.Let l ->
+      let value = analyze l.rhs env in
+      analyze l.body (move_symbol l.symbol l.rhs value env env)
   | Exp.Lambda l ->
       AnalVal.Closure { arg = l.symbol; body = l.body; env = Hashtbl.copy env }
   | Exp.App a -> (
@@ -172,13 +195,17 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
   | Exp.Ref r -> (
       let v = analyze r env in
       match v with
-      | AnalVal.Box _ -> AnalVal.Ref v
-      | rest -> runtime_failure "Not a box: " rest)
+      | AnalVal.Box l ->
+          check_borrow l false env;
+          AnalVal.Ref v
+      | rest -> runtime_failure "Not a Box: " rest)
   | Exp.MutRef r -> (
       let v = analyze r env in
       match v with
-      | AnalVal.Box _ -> AnalVal.MutRef v
-      | rest -> runtime_failure "Not a box: " rest)
+      | AnalVal.Box l ->
+          check_borrow l true env;
+          AnalVal.MutRef v
+      | rest -> runtime_failure "Not a Box: " rest)
   | Exp.Deref d -> (
       let v = analyze d env in
       match v with
