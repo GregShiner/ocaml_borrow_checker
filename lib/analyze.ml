@@ -56,7 +56,7 @@ let runtime_failure msg value =
 let handle_result (value : AnalVal.t) (r : ('a, string) result) : 'a =
   match r with Ok v -> v | Error e -> runtime_failure e value
 
-let rec lookup (sym : string) (env : AnalVal.env) =
+let lookup (sym : string) (env : AnalVal.env) =
   match Hashtbl.find_opt env sym with
   | Some value -> (
       match value with
@@ -185,9 +185,9 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
       Hashtbl.add store loc v;
       AnalVal.Box loc
   | Exp.Unbox u -> (
-      let v = interp u env in
+      let v = analyze u env in
       match v with
-      | Value.Box loc -> (
+      | AnalVal.Box loc -> (
           match Hashtbl.find_opt store loc with
           | Some v -> v
           | None -> failwith "PANIC: Unboxing a non-existent box: ")
