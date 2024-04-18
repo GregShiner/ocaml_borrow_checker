@@ -60,8 +60,8 @@ let lookup (sym : string) (env : AnalVal.env) =
   match Hashtbl.find_opt env sym with
   | Some value -> (
       match value with
-      | Moved -> failwith ("Usage of Moved Value: " ^ sym)
-      | rest -> rest)
+      | Moved -> Error ("Usage of Moved Value: " ^ sym)
+      | rest -> Ok rest)
   | None -> failwith ("free variable: " ^ sym)
 
 let get_nex_loc (store : storage) =
@@ -133,7 +133,7 @@ let check_borrow (loc : location) (isMutable : bool) (env : AnalVal.env) =
 let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
   match exp with
   | Exp.Num _ -> AnalVal.Num
-  | Exp.Id i -> lookup i env
+  | Exp.Id i -> Result.get_ok (lookup i env)
   | Exp.Plus p ->
       let _ = analyze p.lhs env in
       let _ = analyze p.rhs env in
@@ -144,7 +144,13 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
       AnalVal.Num
   | Exp.Let l ->
       let value = analyze l.rhs env in
-      analyze l.body (move_symbol l.symbol l.rhs value env env)
+      let return_val =
+        analyze l.body (move_symbol l.symbol l.rhs value env env)
+      in
+      (match lookup l.symbol env with
+      | Ok (AnalVal.Box b) -> Hashtbl.remove store b
+      | _ -> ());
+      return_val
   | Exp.Lambda l ->
       AnalVal.Closure { arg = l.symbol; body = l.body; env = Hashtbl.copy env }
   | Exp.App a -> (
@@ -156,7 +162,7 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
             analyze c.body (move_symbol c.arg a.arg arg_val env c.env)
           in
           (match lookup c.arg c.env with
-          | AnalVal.Box b -> Hashtbl.remove store b
+          | Ok (AnalVal.Box b) -> Hashtbl.remove store b
           | _ -> ());
           value
       | _ -> failwith "Not a function")

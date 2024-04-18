@@ -76,8 +76,8 @@ let lookup (sym : string) (env : Value.env) =
   match Hashtbl.find_opt env sym with
   | Some value -> (
       match value with
-      | Moved -> failwith ("Usage of Moved Value: " ^ sym)
-      | rest -> rest)
+      | Moved -> Error ("Usage of Moved Value: " ^ sym)
+      | rest -> Ok rest)
   | None -> failwith ("free variable: " ^ sym)
 
 let get_nex_loc (store : storage) =
@@ -125,7 +125,7 @@ let move_symbol (sym : string) (oldsym : Exp.t) (value : Value.t)
 let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
   match exp with
   | Exp.Num n -> Value.Num n
-  | Exp.Id i -> lookup i env
+  | Exp.Id i -> Result.get_ok (lookup i env)
   | Exp.Plus p ->
       let l = interp p.lhs env in
       let r = interp p.rhs env in
@@ -140,7 +140,7 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
         interp l.body (move_symbol l.symbol l.rhs value env env)
       in
       (match lookup l.symbol env with
-      | Value.Box b -> Hashtbl.remove store b
+      | Ok (Value.Box b) -> Hashtbl.remove store b
       | _ -> ());
       return_val
   | Exp.Lambda l ->
@@ -154,7 +154,7 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
             interp c.body (move_symbol c.arg a.arg arg_val env c.env)
           in
           (match lookup c.arg c.env with
-          | Value.Box b -> Hashtbl.remove store b
+          | Ok (Value.Box b) -> Hashtbl.remove store b
           | _ -> ());
           value
       | _ -> failwith "Not a function")
