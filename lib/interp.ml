@@ -167,6 +167,14 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       let loc = get_nex_loc store in
       Hashtbl.add store loc v;
       Value.Box loc
+  | Exp.Unbox u -> (
+      let v = interp u env in
+      match v with
+      | Value.Box loc -> (
+          match Hashtbl.find_opt store loc with
+          | Some v -> v
+          | None -> failwith "PANIC: Unboxing a non-existent box: ")
+      | _ -> failwith "Not a box when unboxing")
   | Exp.Ref r -> (
       let v = interp r env in
       match v with

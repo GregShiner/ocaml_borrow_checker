@@ -15,6 +15,7 @@ module Exp = struct
     | Ref of t
     | MutRef of t
     | Box of t
+    | Unbox of t
     | Deref of t
     | Set of { lhs : t; rhs : t }
 
@@ -33,6 +34,7 @@ module Exp = struct
     | Ref r -> Format.fprintf ppf "Ref(%a)" pp r
     | MutRef r -> Format.fprintf ppf "MutRef(%a)" pp r
     | Box b -> Format.fprintf ppf "Box(%a)" pp b
+    | Unbox u -> Format.fprintf ppf "Unbox(%a)" pp u
     | Deref d -> Format.fprintf ppf "Deref(%a)" pp d
     | Set s -> Format.fprintf ppf "Set(%a, %a)" pp s.lhs pp s.rhs
 end
@@ -82,6 +84,7 @@ let rec parse = function
   | Sexp.List [ Sexp.Atom "&"; e ] -> Exp.Ref (parse e)
   | Sexp.List [ Sexp.Atom "!"; e ] -> Exp.MutRef (parse e)
   | Sexp.List [ Sexp.Atom "box"; e ] -> Exp.Box (parse e)
+  | Sexp.List [ Sexp.Atom "unbox"; e ] -> Exp.Unbox (parse e)
   | Sexp.List [ Sexp.Atom "@"; e ] -> Exp.Deref (parse e)
   | Sexp.List [ Sexp.Atom ":="; e1; e2 ] ->
       Exp.Set { lhs = parse e1; rhs = parse e2 }

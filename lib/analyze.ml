@@ -109,9 +109,6 @@ let move_symbol (sym : string) (oldsym : Exp.t) (value : AnalVal.t)
 
   Hashtbl.replace envTo sym value;
   envTo
-(* let check_create_borrow (borrow : AnalVal.t) (env : AnalVal.env) : () = *)
-(* A MutRef can only be created if there are no other references to the box *)
-(* A Ref can only be created if there are no MutRefs to the box *)
 
 let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
   match exp with
@@ -164,6 +161,14 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
       let loc = get_nex_loc store in
       Hashtbl.add store loc v;
       AnalVal.Box loc
+  | Exp.Unbox u -> (
+      let v = interp u env in
+      match v with
+      | Value.Box loc -> (
+          match Hashtbl.find_opt store loc with
+          | Some v -> v
+          | None -> failwith "PANIC: Unboxing a non-existent box: ")
+      | _ -> failwith "Not a box when unboxing")
   | Exp.Ref r -> (
       let v = analyze r env in
       match v with
