@@ -133,7 +133,7 @@ let check_borrow (loc : location) (isMutable : bool) (env : AnalVal.env) =
 let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
   match exp with
   | Exp.Num _ -> AnalVal.Num
-  | Exp.Id i -> Result.get_ok (lookup i env)
+  | Exp.Id i -> ( match lookup i env with Ok v -> v | Error e -> failwith e)
   | Exp.Plus p ->
       let _ = analyze p.lhs env in
       let _ = analyze p.rhs env in
