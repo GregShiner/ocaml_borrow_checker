@@ -162,7 +162,10 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
             analyze c.body (move_symbol c.arg a.arg arg_val env c.env)
           in
           (match lookup c.arg c.env with
-          | Ok (AnalVal.Box b) -> Hashtbl.remove store b
+          | Ok (AnalVal.Box b) -> (
+              match value with
+              | AnalVal.Box vb when b != vb -> Hashtbl.remove store b
+              | _ -> ())
           | _ -> ());
           value
       | _ -> failwith "Not a function")
