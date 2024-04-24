@@ -63,13 +63,13 @@ let rec parse = function
   | Sexp.List
       [ Sexp.Atom "let"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ] ->
       Exp.Let { symbol = id; rhs = parse e1; body = parse e2 }
-  | Sexp.List
-      [ Sexp.Atom "let-rec"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ]
-    ->
-      parse
-        (Sexp.of_string
-           (Printf.sprintf "(let ((%s (%s (lambda (%s) %s)))) %s)" id mk_rec_fun
-              id (Sexp.to_string e1) (Sexp.to_string e2)))
+  (* | Sexp.List *)
+  (*     [ Sexp.Atom "let-rec"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ] *)
+  (*   -> *)
+  (*     parse *)
+  (*       (Sexp.of_string *)
+  (*          (Printf.sprintf "(let ((%s (%s (lambda (%s) %s)))) %s)" id mk_rec_fun *)
+  (*             id (Sexp.to_string e1) (Sexp.to_string e2))) *)
   | Sexp.List [ Sexp.Atom "+"; e1; e2 ] ->
       Exp.Plus { lhs = parse e1; rhs = parse e2 }
   | Sexp.List [ Sexp.Atom "*"; e1; e2 ] ->
