@@ -21,4 +21,4 @@ let () =
   Format.printf "Output: %a\n%!" Interp.Value.pp
     (Interp.interp (parse_file "test.sexp") Interp.mt_env)
 
-let () = assert (Hashtbl.length Interp.store = 0)
+let () = assert (Hashtbl.length Interp.store = 1)

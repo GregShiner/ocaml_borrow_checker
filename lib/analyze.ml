@@ -5,7 +5,7 @@ type location = int
 module AnalVal = struct
   type t =
     | Num
-    | Closure of { arg : string; body : Exp.t; env : env }
+    | Closure of { arg : string; body : Exp.t; env : env_tree }
     | Bool
     | Box of location
       (* Box represents a value on the heap NOT a reference (analogous to a rust owned value *)
@@ -18,6 +18,7 @@ module AnalVal = struct
   (* and binding = Binding of { name : string; value : t } *)
   (* and env = binding list *)
   and env = (string, t) Hashtbl.t
+  and env_tree = { trunk : env_tree option; branch : env }
 
   let rec pp ppf this =
     match this with
@@ -31,9 +32,11 @@ module AnalVal = struct
     | MutRef r -> Format.fprintf ppf "MutRef(%a)" pp r
     | Moved -> Format.fprintf ppf "Moved"
 
-  and pp_env ppf env =
+  and pp_env ppf env_tree =
     Format.printf "{";
-    Hashtbl.iter (fun x y -> Format.fprintf ppf "%s -> %a" x pp y) env;
+    Hashtbl.iter
+      (fun x y -> Format.fprintf ppf "%s -> %a" x pp y)
+      env_tree.branch;
     Format.printf "}"
 
   (* and pp_binding ppf this = *)
@@ -44,7 +47,7 @@ end
 type storage = (int, AnalVal.t) Hashtbl.t
 
 let (store : storage) = Hashtbl.create 100
-let (mt_env : AnalVal.env) = Hashtbl.create 100
+let (mt_env : AnalVal.env_tree) = { trunk = None; branch = Hashtbl.create 10 }
 
 let extend_env sym value env =
   Hashtbl.replace env sym value;
@@ -56,13 +59,16 @@ let runtime_failure msg value =
 let handle_result (value : AnalVal.t) (r : ('a, string) result) : 'a =
   match r with Ok v -> v | Error e -> runtime_failure e value
 
-let lookup (sym : string) (env : AnalVal.env) =
-  match Hashtbl.find_opt env sym with
+let rec lookup (sym : string) (env : AnalVal.env_tree) =
+  match Hashtbl.find_opt env.branch sym with
   | Some value -> (
       match value with
       | Moved -> Error ("Usage of Moved Value: " ^ sym)
       | rest -> Ok rest)
-  | None -> failwith ("free variable: " ^ sym)
+  | None -> (
+      match env.trunk with
+      | Some trunk -> lookup sym trunk
+      | None -> failwith ("Free variable: " ^ sym))
 
 let get_nex_loc (store : storage) =
   (* Find the next available location in the store with a linear search *)
@@ -96,21 +102,29 @@ let set (lhs : AnalVal.t) (rhs : AnalVal.t) : (AnalVal.t, string) result =
       | _ -> Error "PANIC: MutRef is not of a box: ")
   | _ -> Error "Cannot set a non-mutable reference: "
 
+let rec lookup_box_in_trunk (sym : string) (env : AnalVal.env_tree) =
+  match Hashtbl.find_opt env.branch sym with
+  | Some (AnalVal.Box _) -> Some env.branch
+  | _ -> (
+      match env.trunk with
+      | Some trunk -> lookup_box_in_trunk sym trunk
+      | None -> None)
+
 let move_symbol (sym : string) (oldsym : Exp.t) (value : AnalVal.t)
-    (envFrom : AnalVal.env) (envTo : AnalVal.env) =
+    (env : AnalVal.env_tree) =
   (match oldsym with
   | Exp.Id i -> (
-      match Hashtbl.find_opt envFrom i with
-      | Some (AnalVal.Box _) ->
-          Hashtbl.replace envFrom i Moved;
-          Hashtbl.replace envTo i Moved
+      match lookup_box_in_trunk i env with
+      | Some e ->
+          Hashtbl.replace e i Moved;
+          Hashtbl.replace env.branch i Moved
       | _ -> ())
   | _ -> ());
+  Hashtbl.replace env.branch sym value;
+  env
 
-  Hashtbl.replace envTo sym value;
-  envTo
-
-let check_borrow (loc : location) (isMutable : bool) (env : AnalVal.env) =
+let rec check_borrow (loc : location) (isMutable : bool)
+    (env : AnalVal.env_tree) =
   let check _ (value : AnalVal.t) =
     match isMutable with
     | true -> (
@@ -128,9 +142,10 @@ let check_borrow (loc : location) (isMutable : bool) (env : AnalVal.env) =
               "can not create immutable reference while mutable reference exist"
         | _ -> ())
   in
-  Hashtbl.iter check env
+  Hashtbl.iter check env.branch;
+  match env.trunk with Some e -> check_borrow loc isMutable e | _ -> ()
 
-let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
+let rec analyze (exp : Exp.t) (env : AnalVal.env_tree) : AnalVal.t =
   match exp with
   | Exp.Num _ -> AnalVal.Num
   | Exp.Id i -> ( match lookup i env with Ok v -> v | Error e -> failwith e)
@@ -144,23 +159,24 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
       AnalVal.Num
   | Exp.Let l ->
       let value = analyze l.rhs env in
-      let return_val =
-        analyze l.body (move_symbol l.symbol l.rhs value env env)
-      in
+      let return_val = analyze l.body (move_symbol l.symbol l.rhs value env) in
       (match lookup l.symbol env with
       | Ok (AnalVal.Box b) -> Hashtbl.remove store b
       | _ -> ());
       return_val
   | Exp.Lambda l ->
-      AnalVal.Closure { arg = l.symbol; body = l.body; env = Hashtbl.copy env }
+      AnalVal.Closure
+        {
+          arg = l.symbol;
+          body = l.body;
+          env = { trunk = Some env; branch = Hashtbl.create 10 };
+        }
   | Exp.App a -> (
       let func = analyze a.func env in
       let arg_val = analyze a.arg env in
       match func with
       | AnalVal.Closure c ->
-          let value =
-            analyze c.body (move_symbol c.arg a.arg arg_val env c.env)
-          in
+          let value = analyze c.body (move_symbol c.arg a.arg arg_val c.env) in
           (match lookup c.arg c.env with
           | Ok (AnalVal.Box b) -> (
               match value with
