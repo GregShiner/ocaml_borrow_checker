@@ -1,0 +1,3 @@
+(let-begin ((x (box 5)))
+    (:= (! x) 6)
+    (unbox x))
