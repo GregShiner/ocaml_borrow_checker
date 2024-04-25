@@ -1,0 +1,6 @@
+(let ((x (box 5)))
+    (let ((ref1 (& x)))
+        (let-begin ((ref2 (& x)))
+            (display (@ ref1))
+            (display (@ ref2))
+            (display (unbox x)))))

@@ -1,0 +1,6 @@
+(let ((x (box 5))) ; Allocate a value in the store
+    (let ((ref1 (& x))) ; Borrow the value as immutable
+        (let-begin ((ref2 (! x))) ; ERROR: Cannot borrow as mutable while already borrowed as immutable
+            (display (@ ref1))
+            (display (@ ref2))
+            (display (unbox x)))))
