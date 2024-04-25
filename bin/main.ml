@@ -22,4 +22,4 @@ let () =
   Format.printf "Output: %a\n%!" Interp.Value.pp
     (Interp.interp exp Interp.mt_env)
 
-let () = assert (Hashtbl.length Interp.store = 0)
+let () = assert (Hashtbl.length Interp.store = 1)

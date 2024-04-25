@@ -64,7 +64,8 @@ let rec parse = function
   | Sexp.Atom s -> ( try Exp.Num (int_of_string s) with Failure _ -> Exp.Id s)
   | Sexp.List
       [ Sexp.Atom "let"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ] ->
-      Exp.Let { symbol = id; rhs = parse e1; body = parse e2 }
+      Exp.App
+        { func = Exp.Lambda { symbol = id; body = parse e2 }; arg = parse e1 }
   | Sexp.List
       (* [ *)
       (*   Sexp.Atom "let-begin"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2; *)
@@ -81,6 +82,13 @@ let rec parse = function
         (Sexp.of_string
            (Printf.sprintf "(let ((%s (%s (lambda (%s) %s)))) %s)" id mk_rec_fun
               id (Sexp.to_string e1) (Sexp.to_string e2)))
+  (* | Sexp.List *)
+  (*     [ Sexp.Atom "let-rec"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ] *)
+  (*   -> *)
+  (*     parse *)
+  (*       (Sexp.of_string *)
+  (*          (Printf.sprintf "(let ((%s (%s (lambda (%s) %s)))) %s)" id mk_rec_fun *)
+  (*             id (Sexp.to_string e1) (Sexp.to_string e2))) *)
   | Sexp.List [ Sexp.Atom "+"; e1; e2 ] ->
       Exp.Plus { lhs = parse e1; rhs = parse e2 }
   | Sexp.List [ Sexp.Atom "*"; e1; e2 ] ->
