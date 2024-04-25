@@ -1,0 +1,8 @@
+#|
+    Demo 9: ERROR moves by passing
+|#
+
+(let ((x (box 5)))  ; Allocates a box in the store
+    (let-begin ((f (lambda (y) (+ 1 (unbox y))))) ; Function unboxes param and adds 1 to it
+        (f x)   ; We move x into f, f takes ownership of x
+        (f x))) ; ERROR: x has been moved

@@ -1,6 +1,11 @@
+#|
+    Demo 2: Muttable Borrows
+        - Desc
+|#
+
 (let ((x (box 5)))
-    (let-begin ((ref1 (! x)))
-        (display (@ ref1))
-            (:= ref1 6)
-            (display (@ ref1))
-            (display (unbox x))))
+    (let-begin ((ref1 (! x)))   ; '!' creates muttable refernce
+        (display (@ ref1))      ; '@' de-references and returns the boxed value
+        (:= ref1 6)             ; ':=' sets the value pointed to by muttable reference
+        (display (@ ref1))      ; "display" prints
+        (display (unbox x))))

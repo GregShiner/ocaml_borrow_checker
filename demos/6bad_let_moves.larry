@@ -1,0 +1,8 @@
+#|
+    Demo 6: ERROR Moves within a Let
+        - ERROR you cannot use a value after move
+|#
+
+(let ((x (box 5)))  ; Allocates a box in the store
+    (let ((y x))    ; The value stored at x is moved into y
+        (unbox x))) ; Getting value out of x, ERROR: x has been moved

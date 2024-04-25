@@ -1,0 +1,8 @@
+#|
+    Demo 5: Moves within a Let
+        - desc
+|#
+
+(let ((x (box 5)))  ; Allocates a box in the store
+    (let ((y x))    ; The value stored at x is moved into y
+        (unbox y))) ; Getting value out of y

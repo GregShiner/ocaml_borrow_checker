@@ -1,6 +1,11 @@
+#|
+    Demo 1: Immuttable Borrows
+        - Desc
+|#
+
 (let ((x (box 5)))
-    (let ((ref1 (& x)))
-        (let-begin ((ref2 (& x)))
-            (display (@ ref1))
-            (display (@ ref2))
-            (display (unbox x)))))
+    (let ((ref1 (& x)))             ; '&' creates immutable reference
+        (let-begin ((ref2 (& x)))   ;
+            (display (@ ref1))      ; '@' de-references and returns the boxed value
+            (display (@ ref2))      ; "display" prints to console
+            (display (unbox x)))))  ;
