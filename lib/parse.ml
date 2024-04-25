@@ -73,8 +73,14 @@ let rec parse = function
       (Sexp.Atom "let-begin"
       :: Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]
       :: e2) ->
-      Exp.Let
-        { symbol = id; rhs = parse e1; body = Exp.Begin (List.map parse e2) }
+      (* Exp.Let *)
+      (*   { symbol = id; rhs = parse e1; body = Exp.Begin (List.map parse e2) } *)
+      Exp.App
+        {
+          func =
+            Exp.Lambda { symbol = id; body = Exp.Begin (List.map parse e2) };
+          arg = parse e1;
+        }
   | Sexp.List
       [ Sexp.Atom "let-rec"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ]
     ->
