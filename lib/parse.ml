@@ -19,6 +19,7 @@ module Exp = struct
     | Unbox of t
     | Deref of t
     | Set of { lhs : t; rhs : t }
+    | Display of t
 
   let rec pp ppf this =
     match this with
@@ -39,6 +40,7 @@ module Exp = struct
     | Let l -> Format.fprintf ppf "Let(%s, %a, %a)" l.symbol pp l.rhs pp l.body
     | Deref d -> Format.fprintf ppf "Deref(%a)" pp d
     | Set s -> Format.fprintf ppf "Set(%a, %a)" pp s.lhs pp s.rhs
+    | Display d -> Format.fprintf ppf "Display(%a)" pp d
 end
 
 (* (define mk-rec-fun
@@ -64,6 +66,15 @@ let rec parse = function
       [ Sexp.Atom "let"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ] ->
       Exp.Let { symbol = id; rhs = parse e1; body = parse e2 }
   | Sexp.List
+      (* [ *)
+      (*   Sexp.Atom "let-begin"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2; *)
+      (* ] -> *)
+      (Sexp.Atom "let-begin"
+      :: Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]
+      :: e2) ->
+      Exp.Let
+        { symbol = id; rhs = parse e1; body = Exp.Begin (List.map parse e2) }
+  | Sexp.List
       [ Sexp.Atom "let-rec"; Sexp.List [ Sexp.List [ Sexp.Atom id; e1 ] ]; e2 ]
     ->
       parse
@@ -88,5 +99,6 @@ let rec parse = function
   | Sexp.List [ Sexp.Atom "@"; e ] -> Exp.Deref (parse e)
   | Sexp.List [ Sexp.Atom ":="; e1; e2 ] ->
       Exp.Set { lhs = parse e1; rhs = parse e2 }
+  | Sexp.List [ Sexp.Atom "display"; e ] -> Exp.Display (parse e)
   | Sexp.List [ e1; e2 ] -> Exp.App { func = parse e1; arg = parse e2 }
   | sexp -> failwith ("Invalid sexp: " ^ Sexp.to_string sexp)

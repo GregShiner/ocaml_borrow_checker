@@ -221,3 +221,7 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env) : AnalVal.t =
       let lhs = analyze s.lhs env in
       let rhs = analyze s.rhs env in
       set lhs rhs |> handle_result lhs
+  | Exp.Display d ->
+      let v = analyze d env in
+      (* Format.printf "%a\n" AnalVal.pp v; *)
+      v

@@ -80,7 +80,7 @@ let lookup (sym : string) (env : Value.env) =
       | rest -> Ok rest)
   | None -> failwith ("free variable: " ^ sym)
 
-let get_nex_loc (store : storage) =
+let get_next_loc (store : storage) =
   (* Find the next available location in the store with a linear search *)
   let rec find_next_loc loc =
     if Hashtbl.mem store loc then find_next_loc (loc + 1) else loc
@@ -173,7 +173,7 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
   | Exp.Begin b -> List.fold_left (fun _ e -> interp e env) (Value.Num 0) b
   | Exp.Box b ->
       let v = interp b env in
-      let loc = get_nex_loc store in
+      let loc = get_next_loc store in
       Hashtbl.add store loc v;
       Value.Box loc
   | Exp.Unbox u -> (
@@ -203,3 +203,7 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       let lhs = interp s.lhs env in
       let rhs = interp s.rhs env in
       set lhs rhs |> handle_result lhs
+  | Exp.Display d ->
+      let v = interp d env in
+      Format.printf "%a\n" Value.pp v;
+      v
