@@ -20,6 +20,7 @@ module Exp = struct
     | Deref of t
     | Set of { lhs : t; rhs : t }
     | Display of t
+    | Debug of t
 
   let rec pp ppf this =
     match this with
@@ -41,6 +42,7 @@ module Exp = struct
     | Deref d -> Format.fprintf ppf "Deref(%a)" pp d
     | Set s -> Format.fprintf ppf "Set(%a, %a)" pp s.lhs pp s.rhs
     | Display d -> Format.fprintf ppf "Display(%a)" pp d
+    | Debug d -> Format.fprintf ppf "Debug(%a)" pp d
 end
 
 (* (define mk-rec-fun
@@ -114,5 +116,6 @@ let rec parse = function
   | Sexp.List [ Sexp.Atom ":="; e1; e2 ] ->
       Exp.Set { lhs = parse e1; rhs = parse e2 }
   | Sexp.List [ Sexp.Atom "display"; e ] -> Exp.Display (parse e)
+  | Sexp.List [ Sexp.Atom "debug"; e ] -> Exp.Debug (parse e)
   | Sexp.List [ e1; e2 ] -> Exp.App { func = parse e1; arg = parse e2 }
   | sexp -> failwith ("Invalid sexp: " ^ Sexp.to_string sexp)

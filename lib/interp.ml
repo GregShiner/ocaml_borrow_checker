@@ -208,5 +208,13 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       set lhs rhs |> handle_result lhs
   | Exp.Display d ->
       let v = interp d env in
+      (match v with
+      | Value.Num n -> Format.printf "%i\n" n
+      | Value.Bool b -> Format.printf "%b\n" b
+      | _ -> Format.printf "%a\n" Value.pp v);
+      v
+  | Exp.Debug d ->
+      let v = interp d env in
       Format.printf "%a\n" Value.pp v;
       v
+
