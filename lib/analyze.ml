@@ -157,13 +157,13 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env_tree) : AnalVal.t =
       let _ = analyze m.lhs env in
       let _ = analyze m.rhs env in
       AnalVal.Num
-  | Exp.Let l ->
-      let value = analyze l.rhs env in
-      let return_val = analyze l.body (move_symbol l.symbol l.rhs value env) in
-      (match lookup l.symbol env with
-      | Ok (AnalVal.Box b) -> Hashtbl.remove store b
-      | _ -> ());
-      return_val
+  (* | Exp.Let l -> *)
+  (*     let value = analyze l.rhs env in *)
+  (*     let return_val = analyze l.body (move_symbol l.symbol l.rhs value env) in *)
+  (*     (match lookup l.symbol env with *)
+  (*     | Ok (AnalVal.Box b) -> Hashtbl.remove store b *)
+  (*     | _ -> ()); *)
+  (*     return_val *)
   | Exp.Lambda l ->
       AnalVal.Closure
         {
@@ -241,6 +241,10 @@ let rec analyze (exp : Exp.t) (env : AnalVal.env_tree) : AnalVal.t =
       let rhs = analyze s.rhs env in
       set lhs rhs |> handle_result lhs
   | Exp.Display d ->
+      let v = analyze d env in
+      (* Format.printf "%a\n" AnalVal.pp v; *)
+      v
+  | Exp.Debug d ->
       let v = analyze d env in
       (* Format.printf "%a\n" AnalVal.pp v; *)
       v

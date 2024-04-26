@@ -134,15 +134,15 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       let l = interp m.lhs env in
       let r = interp m.rhs env in
       numMult l r
-  | Exp.Let l ->
-      let value = interp l.rhs env in
-      let return_val =
-        interp l.body (move_symbol l.symbol l.rhs value env env)
-      in
-      (match lookup l.symbol env with
-      | Ok (Value.Box b) -> Hashtbl.remove store b
-      | _ -> ());
-      return_val
+  (* | Exp.Let l -> *)
+  (*     let value = interp l.rhs env in *)
+  (*     let return_val = *)
+  (*       interp l.body (move_symbol l.symbol l.rhs value env env) *)
+  (*     in *)
+  (*     (match lookup l.symbol env with *)
+  (*     | Ok (Value.Box b) -> Hashtbl.remove store b *)
+  (*     | _ -> ()); *)
+  (*     return_val *)
   | Exp.Lambda l ->
       Value.Closure { arg = l.symbol; body = l.body; env = Hashtbl.copy env }
   | Exp.App a -> (
@@ -217,4 +217,3 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
       let v = interp d env in
       Format.printf "%a\n" Value.pp v;
       v
-
