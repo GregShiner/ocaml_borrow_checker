@@ -1,0 +1,3 @@
+(if true
+    6
+    false) ; ERROR: Types, num, and bool, don't match

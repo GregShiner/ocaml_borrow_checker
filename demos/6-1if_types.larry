@@ -1,0 +1,3 @@
+(if (= 7 9) ; If conditions must evaluate to a boolean
+    6
+    7)
