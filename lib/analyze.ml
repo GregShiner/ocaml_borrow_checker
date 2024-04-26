@@ -2,6 +2,8 @@ open Parse
 
 type location = int
 
+let () = Printexc.record_backtrace false
+
 module AnalVal = struct
   type t =
     | Num
