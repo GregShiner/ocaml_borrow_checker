@@ -1,3 +1,7 @@
-(if true ; if conditions must evaluate to a boolean
+#|
+    Demo 12: Boolean Literals
+|#
+
+(if true ; Boolean expressions can be literals
     5
     6)

@@ -1,8 +1,9 @@
 #|
-    Demo 7: ERROR Moves within a Let
-        - ERROR you cannot use a value after move
+    Demo 7: Moves with function calls
+        - Values are moved when they are passed as arguments to functions
+        - This is because the function takes ownership of the value
 |#
 
-(let ((x (box 5)))  ; Allocates a box in the store
+(let ((x (box 5)))                          ; Allocates a box in the store
     (let ((f (lambda (y) (+ 1 (unbox y))))) ; Function unboxes param and adds 1 to it
-        (f x))) ; We move x into f, f takes ownership of x
+        (f x)))                             ; We move x into f, f takes ownership of x

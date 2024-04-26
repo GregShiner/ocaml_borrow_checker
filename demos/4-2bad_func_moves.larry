@@ -1,8 +1,9 @@
 #|
-    Demo 9: ERROR moves by passing
+    Demo 8: ERROR moves by passing
+        - When a value is moved into a function, the outer scope loses ownership of the value
 |#
 
-(let ((x (box 5)))  ; Allocates a box in the store
-    (let-begin ((f (lambda (y) (+ 1 (unbox y))))) ; Function unboxes param and adds 1 to it
-        (f x)   ; We move x into f, f takes ownership of x
-        (f x))) ; ERROR: x has been moved
+(let ((x (box 5)))                                  ; Allocates a box in the store
+    (let-begin ((f (lambda (y) (+ 1 (unbox y)))))   ; Function unboxes param and adds 1 to it
+        (f x)                                       ; We move x into f, f takes ownership of x
+        (f x)))                                     ; ERROR: x has been moved

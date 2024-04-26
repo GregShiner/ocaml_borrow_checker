@@ -1,3 +1,8 @@
+#|
+    Demo 13: Type checking if's
+        - If arms must match in type
+|#
+
 (if true
     6
     false) ; ERROR: Types, num, and bool, don't match

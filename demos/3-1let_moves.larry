@@ -1,6 +1,6 @@
 #|
     Demo 5: Moves within a Let
-        - Values are moved when that are reasigned within a let
+        - Values are moved when they are reasigned within a let
 |#
 
 (let ((x (box 5)))  ; Allocates a box in the store

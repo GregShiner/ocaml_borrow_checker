@@ -5,10 +5,10 @@
             cause unintended side effects
 |#
 
-(let ((x (box 5))) ; Allocate a value in the store
-    (let ((ref1 (! x))) ; Borrow the value as mutable
-        (let-begin ((ref2 (! x))) ; ERROR: Cannot borrow as mutable twice
-            (display (@ ref1))
-            (display (@ ref2))
-            (display (unbox x)))))
+(let ((x (box 5)))                  ; Allocate a value in the store
+    (let ((ref1 (! x)))             ; Borrow the value as mutable
+        (let-begin ((ref2 (! x)))   ; ERROR: Cannot borrow as mutable twice
+            (display (@ ref1))      ; Dereference the first borrow
+            (display (@ ref2))      ; Dereference the second borrow
+            (display (unbox x)))))  ; Unbox the value
 

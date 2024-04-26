@@ -5,7 +5,7 @@
 
 (let ((x (box 5)))
     (let ((ref1 (& x)))             ; '&' creates immutable reference
-        (let-begin ((ref2 (& x)))   ;
+        (let-begin ((ref2 (& x)))   ; `let-begin` is a shorthand for a `let` with `begin` inside
             (display (@ ref1))      ; '@' de-references and returns the boxed value
             (display (@ ref2))      ; "display" prints to console
             (display (unbox x)))))  ;

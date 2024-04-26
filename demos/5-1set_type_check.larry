@@ -1,3 +1,8 @@
-(let-begin ((x (box 5)))
-    (:= (! x) 6)
-    (unbox x))
+#|
+    Demo 9: Type checking on set (:=)
+        - You can set the value of a box using a mutable reference
+|#
+
+(let-begin ((x (box 5))) ; x is a box containing 5
+    (:= (! x) 6)         ; Set the value of x to 6 using the mutable reference
+    (unbox x))           ; Return the value of x

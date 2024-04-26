@@ -1,4 +1,9 @@
-(let-begin ((x (box 5)))
-    (:= (! x) true)
+#|
+    Demo 10: ERROR: Type checking on set (:=)
+        - You cannot set the value of a box to a different type
+|#
+
+(let-begin ((x (box 5)))    ; x is a box containing an integer
+    (:= (! x) true)         ; ERROR: Cannot set a num to bool
     (unbox x))
 

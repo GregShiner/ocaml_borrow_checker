@@ -1,3 +1,9 @@
+#|
+    Demo 11: If Conditions
+        - Branches must have the same type
+        - Conditions must evaluate to a Boolean
+|#
+
 (if (= 7 9) ; If conditions must evaluate to a boolean
-    6
+    6       ; Branches must have the same type
     7)
