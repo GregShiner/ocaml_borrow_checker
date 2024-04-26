@@ -1,6 +1,6 @@
 #|
     Demo 1: Immuttable Borrows
-        - Desc
+        - Allow sharing of data without allowing mutation
 |#
 
 (let ((x (box 5)))

@@ -1,6 +1,7 @@
 #|
     Demo 4: Mixed Borrows
         - ERROR: Cannot borrow as mutable while already borrowed as immutable
+        - Something that is immutable should stay immutable
 |#
 
 (let ((x (box 5))) ; Allocate a value in the store

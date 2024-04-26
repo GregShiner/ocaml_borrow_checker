@@ -1,6 +1,8 @@
 #|
     Demo 3: ERROR Multiple Muttable Borrows
-        - Desc
+        - ERROR: Cannot borrow as mutable twice
+        - Creating multiple mutable borrows can
+            cause unintended side effects
 |#
 
 (let ((x (box 5))) ; Allocate a value in the store

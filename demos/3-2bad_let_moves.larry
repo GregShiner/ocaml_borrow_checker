@@ -1,6 +1,9 @@
 #|
     Demo 6: ERROR Moves within a Let
         - ERROR you cannot use a value after move
+        - Using a value in 2 places would require a copy
+            or multiple pointers to the same value
+            which is unsafe
 |#
 
 (let ((x (box 5)))  ; Allocates a box in the store

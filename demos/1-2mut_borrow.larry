@@ -1,6 +1,8 @@
 #|
     Demo 2: Muttable Borrows
-        - Desc
+        - Allows singly shared access to a value
+            - (only one muttable reference can exist at a time)
+        - Allows mutation of the value
 |#
 
 (let ((x (box 5)))
