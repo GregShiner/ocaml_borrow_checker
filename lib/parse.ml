@@ -2,24 +2,44 @@ open Sexplib
 
 module Exp = struct
   type t =
-    | Num of int
+      (* Number *)
+    | Num of int 
+      (* Symbolic identifier *)
     | Id of string
+      (* Addition; lhs and rhs must resolve to a Num *)
     | Plus of { lhs : t; rhs : t }
+      (* Multiplication; lhs and rhs must resolve to a Num *)
     | Mult of { lhs : t; rhs : t }
-    | Lambda of { symbol : string; body : t }
-    | App of { func : t; arg : t }
+      (* Lambda function *)
+    | Lambda of { symbol : string; body : t } 
+      (* Application of a function *)
+    | App of { func : t; arg : t } 
+      (* Conditional; cond must resolve to a Bool; resolves to lhs when cond is true, otherwise rhs *)
+      (* lhs and rhs must resolve to the same type *)
     | If of { cond : t; lhs : t; rhs : t }
+      (* Equality; lhs and rhs must resolve to numbers *)
     | Eq of { lhs : t; rhs : t }
+      (* Let exp is deprecated in favor of lambda application sugar *)
     (* | Let of { symbol : string; rhs : t; body : t } *)
+      (* Sequence of expressions; resolves to the last expression *)
     | Begin of t list
+      (* Boolean *)
     | Bool of bool
+      (* Immutable ref; can only be made on boxes; see borrow checking rules for more *)
     | Ref of t
+      (* Mutable ref; can only be made on boxes; see borrow checking rules for more *)
     | MutRef of t
+      (* Boxed value; can be borrowed as a ref; represents a heap allocated value *)
     | Box of t
-    | Unbox of t
+      (* Get the value stored in a box *)
+    | Unbox of t 
+      (* Get the value stored in a ref *)
     | Deref of t
+      (* Set the value stored in a mutable ref *)
     | Set of { lhs : t; rhs : t }
+      (* Print the value of a num or bool to stdout *)
     | Display of t
+      (* Print the result of Exp.pp to stdout *)
     | Debug of t
 
   let rec pp ppf this =
@@ -43,7 +63,7 @@ module Exp = struct
     | Set s -> Format.fprintf ppf "Set(%a, %a)" pp s.lhs pp s.rhs
     | Display d -> Format.fprintf ppf "Display(%a)" pp d
     | Debug d -> Format.fprintf ppf "Debug(%a)" pp d
-end
+end [@@ocamlformat "disable"]
 
 (* (define mk-rec-fun
    `{lambda {body-proc}
