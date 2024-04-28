@@ -156,8 +156,8 @@ let rec interp (exp : Exp.t) (env : Value.env) : Value.t =
           (match lookup c.arg c.env with
           | Ok (Value.Box b) -> (
               match value with
-              | Value.Box vb when b != vb -> Hashtbl.remove store b
-              | _ -> ())
+              | Value.Box vb when b == vb -> ()
+              | _ -> Hashtbl.remove store b)
           | _ -> ());
           value
       | _ -> failwith "Not a function")
