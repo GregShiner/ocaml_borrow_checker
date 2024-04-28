@@ -308,3 +308,148 @@ For example, the following code is invalid:
         (let ((y x))    ; Move x into y (x is no longer valid)
             (@ ref))))  ; Dereference the reference to x; ERROR: Cannot dereference a reference to a moved value
 ```
+
+# Interpretation and Analysis
+
+## Store and Enviroment
+
+The store is a hash table with the key being an integer which functions as a pseudo location in memory, which allows for mutations of declared variables.
+
+The enviroment is also a hash table which map variables, a.k.a symbols, to its declared value.
+
+The values in both the store and environment are `Value.t`s. (during analysis, `AnalVal.t`s are used. See Outline -> Main file -> The Analyzer.)
+```ocaml
+module Value = struct
+  type t =
+    | Num of int
+    | Closure of { arg : string; body : Exp.t; env : env }
+    | Bool of bool
+    | Box of location
+      (* Box represents a value on the heap NOT a reference (analogous to a rust owned value *)
+    | Ref of t
+      (* Ref represents an immutable borrow of a value on the heap (can only be created for boxes) *)
+    | MutRef of t
+      (* MutRef represents a mutable borrow of a value on the heap (can only be created for boxes) *)
+    | Moved
+```
+
+## Interpreter
+
+The interpreter starts at the top of the syntax tree and recursively interprets all of the expressions throughout the tree.
+
+### Exp.Num
+
+`Value.Num` is returned.
+
+### Exp.Bool
+
+`Value.Bool` is returned.
+
+### Exp.Id
+
+The `lookup` helper function is called which gets the value of the symbol from the environment and returns it. An error will be thrown if it is a `Moved` value, or if it doesn't exist.
+
+### Exp.Plus
+
+Interp the left and right hand side of the expression and add them together.
+
+### Exp.Mult
+
+Interp the left and right hand side of the expression and multiply them together.
+
+### Exp.Eq
+
+Interp the left and right hand side of the expression and return true if they are the same, false otherwise.
+
+### Exp.Lambda
+
+Return `Value.Closure` with the environment inside the closure being a copy of the current environment, which allows for variable shadowing.
+
+### Exp.App
+
+There is three parts to this operation, which occur at different stages of the expression, with the following syntax:
+
+```lisp
+(Func Arg)
+```
+
+The first is interping the `Func` which is being applied. If `Func` does not return a `Closure` then a "Not a function" error is thrown.
+
+Then `Arg` is interped, it is the value mapped to the symbol inside the Closure. The mapping of the value inside the environment of the closure is done via a helper function `move_symbol`. It checks if `Arg` is a symbol, and if its value is a  `Value.Box` inside the current environment. If it is, it will change that symbol to a `Moved` value. Then the `Arg` is mapped to the symbol inside the environment of `Closure`.
+
+Finally, the body of the `Func` is interped with the new binding, and before its value is returned, a clean up operation will occur. This will check whether the return value is a `Value.Box` and if it is the same `Value.Box` as the `Arg`. If it is not then it removes the value inside store.
+
+### Exp.If
+
+Interp the condition and if it is true then return the interped value of left handside, otherwise return the interped value of right handside.
+
+### Exp.Begin
+
+Fold left is used to interpret the list of expressions, with the same environment, which allow for mutation of the environment to be shared across all interp calls within the `Begin`.
+
+Mutation of environment is needed for checking when a value is moved and to prevent its useage.
+
+### Exp.Box
+
+Return a `Value.Box` with the location in store that is mapped to the interped value. To determine the location to store the value at, it will do a linear search across the store to find the next available location in the store by integer.
+
+### Exp.Unbox
+
+Return the value inside store that `Value.Box` pointed to, throw error if theres nothing at the location.
+
+### Exp.Ref
+
+Return `Value.Ref`, which serves as a copy of `Value.Box`, allowing it to be moved and use at multiple places without moving the actual box. It also follows the borrow checking rules described above.
+
+### Exp.MutRef
+
+Return `Value.MutRef`, which serves as a copy of `Value.Box`, allow for mutation the box location in store. It also follows the borrow checking rules described above.
+
+### Exp.Deref
+
+Return `Value.t` of the value at a `Value.Ref` or `Value.MutRef` location in the store.
+
+### Exp.Set
+
+Mutate value at `Value.MutRef` location, and return the new value.
+
+### Display
+
+Print value to console, return value printed.
+
+### Debug
+
+Print debug format of value and return value.
+
+## Analysis
+
+Most of the static analysis steps are repeats of interp without storing the actual value or computation, so only the differences will be discussed.
+
+### Environment
+
+In analysis, the environment is a tree structure instead of of a flat hashtable, this allows for changes of earlier environments to be reflected in subsequence analysis calls deeper down the syntax tree and prevent usage of moved values. 
+
+### Borrow checker
+
+In analysis, an additional borrow checker step is added to ensure:
+- Multiple mutable references can not exist.
+- Mutable and immutable references can not co-exist.
+
+The borrow checker is ran when the analyzer encounters a `Exp.Ref` or `Exp.MutRef`.
+
+In the case of `Exp.Ref` the borrow checker iterates through the environment and checks if a mutable reference already exists. If it does, then throw an error.
+
+For `Exp.MutRef` the borrow checker iterates through the environment and checks if an immutable or mutable reference already exists. If it does, then throw an error.
+
+### Type checking
+
+The static analysis step also checks the return type for the left hand side and right hand side to make sure they're the same/make sense for the following expressions:
+- `Exp.If`
+  - `cond` must resolve to a `Value.Bool`
+- `Exp.Eq`
+  - Both must be numbers (may be extended to booleans at a later date)
+- `Exp.Plus`
+  - Both must be numbers
+- `Exp.Mult`
+  - Both must be numbers
+
