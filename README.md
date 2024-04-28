@@ -113,43 +113,25 @@ The following is an excerpt from `lib/parse.ml`
 ```ocaml
 module Exp = struct
   type t =
-      (* Number *)
-    | Num of int 
-      (* Symbolic identifier *)
-    | Id of string
-      (* Addition; lhs and rhs must resolve to a Num *)
-    | Plus of { lhs : t; rhs : t }
-      (* Multiplication; lhs and rhs must resolve to a Num *)
-    | Mult of { lhs : t; rhs : t }
-      (* Lambda function *)
-    | Lambda of { symbol : string; body : t } 
-      (* Application of a function *)
-    | App of { func : t; arg : t } 
+    | Num of int (* Number *)
+    | Id of string (* Symbolic identifier *)
+    | Plus of { lhs : t; rhs : t } (* Addition; lhs and rhs must resolve to a Num *)
+    | Mult of { lhs : t; rhs : t } (* Multiplication; lhs and rhs must resolve to a Num *)
+    | Lambda of { symbol : string; body : t } (* Lambda function *)
+    | App of { func : t; arg : t } (* Application of a function *)
       (* Conditional; cond must resolve to a Bool; resolves to lhs when cond is true, otherwise rhs *)
-      (* lhs and rhs must resolve to the same type *)
-    | If of { cond : t; lhs : t; rhs : t }
-      (* Equality; lhs and rhs must resolve to numbers *)
-    | Eq of { lhs : t; rhs : t }
-      (* Sequence of expressions; resolves to the last expression *)
-    | Begin of t list
-      (* Boolean *)
-    | Bool of bool
-      (* Immutable ref; can only be made on boxes; see borrow checking rules for more *)
-    | Ref of t
-      (* Mutable ref; can only be made on boxes; see borrow checking rules for more *)
-    | MutRef of t
-      (* Boxed value; can be borrowed as a ref; represents a heap allocated value *)
-    | Box of t
-      (* Get the value stored in a box *)
-    | Unbox of t 
-      (* Get the value stored in a ref *)
-    | Deref of t
-      (* Set the value stored in a mutable ref *)
-    | Set of { lhs : t; rhs : t }
-      (* Print the value of a num or bool to stdout *)
-    | Display of t
-      (* Print the result of Exp.pp to stdout *)
-    | Debug of t
+    | If of { cond : t; lhs : t; rhs : t } (* lhs and rhs must resolve to the same type *)
+    | Eq of { lhs : t; rhs : t } (* Equality; lhs and rhs must resolve to numbers *)
+    | Begin of t list (* Sequence of expressions; resolves to the last expression *)
+    | Bool of bool (* Boolean *)
+    | Ref of t (* Immutable ref; can only be made on boxes; see borrow checking rules for more *)
+    | MutRef of t (* Mutable ref; can only be made on boxes; see borrow checking rules for more *)
+    | Box of t (* Boxed value; can be borrowed as a ref; represents a heap allocated value *)
+    | Unbox of t (* Get the value stored in a box *)
+    | Deref of t (* Get the value stored in a ref *)
+    | Set of { lhs : t; rhs : t } (* Set the value stored in a mutable ref *)
+    | Display of t (* Print the value of a num or bool to stdout *)
+    | Debug of t (* Print the result of Exp.pp to stdout *)
 ```
 ## Sugars
 ### Let
