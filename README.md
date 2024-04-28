@@ -162,7 +162,6 @@ Adding the sugar expressions, there is also the following:
         | (let-begin ((<id> <exp>)) <exp>*)
         | (let-rec ((<id> <exp>)) <exp>)
 ```
-In Addition to these base expressions, there are a couple of sugars to extend the language.
 ## Sugars
 ### Let
 The `let` form is a syntactic sugar for a lambda function application. The sugar looks like the following:
