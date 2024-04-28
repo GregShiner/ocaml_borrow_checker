@@ -130,9 +130,10 @@ module Exp = struct
     | Unbox of t (* Get the value stored in a box *)
     | Deref of t (* Get the value stored in a ref *)
     | Set of { lhs : t; rhs : t } (* Set the value stored in a mutable ref *)
-    | Display of t (* Print the value of a num or bool to stdout *)
-    | Debug of t (* Print the result of Exp.pp to stdout *)
+    | Display of t (* If num or bool, prints value to stdout, otherwise, pretty prints the value *)
+    | Debug of t (* Pretty prints the value to stdout *)
 ```
+In Addition to these base expressions, there are a couple of sugars to extend the language.
 ## Sugars
 ### Let
 The `let` form is a syntactic sugar for a lambda function application. The sugar looks like the following:
@@ -145,3 +146,26 @@ desugars to the following:
 ((lambda (id) body) rhs)
 ```
 This sugar is really powerful for our language. The idea is that we would only have to make all of our language features work with simple lambda function applications. This would then make other language features such as `let` work implicitly with things like borrow checking and move semantics.
+
+### Let-begin
+The `let-begin` form is simply a convenience sugar for the common pattern of having a `begin` expression as the body of a `let` expression. The following pattern:
+```lisp
+(let-begin ((id rhs))
+  (expr1)
+  (expr2)
+  ...)
+```
+expands to
+```lisp
+(let ((id rhs))
+  (begin
+    (expr1)
+    (expr2)
+    ...))
+```
+
+### Recursive Bindings
+> [!CAUTION]
+> Recursive bindings are not yet implemented in the analyzer due to a technical limitation. Currently, they will send the analyzer into an infinite loop. This will be addressed at a later date.
+> If you would *really* like to use them, you can do so by commenting out [line 20 in bin/main.ml](https://github.com/GregShiner/ocaml_borrow_checker/blob/main/bin/main.ml#L20).
+> This is extremely untested, so use at your own risk.
