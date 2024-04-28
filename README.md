@@ -133,6 +133,35 @@ module Exp = struct
     | Display of t (* If num or bool, prints value to stdout, otherwise, pretty prints the value *)
     | Debug of t (* Pretty prints the value to stdout *)
 ```
+## Grammar
+The grammar for the language is as follows:
+```
+<exp> ::= <num>
+        | <id>
+        | true
+        | false
+        | (+ <exp> <exp>)
+        | (* <exp> <exp>)
+        | (lambda (<id>) <exp>)
+        | (<exp> <exp>)           ; function application
+        | (if <exp> <exp> <exp>)
+        | (= <exp> <exp>)
+        | (begin <exp>*)
+        | (& <exp>)               ; immutable reference
+        | (! <exp>)               ; mutable reference
+        | (box <exp>)
+        | (unbox <exp>)
+        | (@ <exp>)               ; dereference
+        | (:= <exp> <exp>)        ; set mutable reference
+        | (display <exp>)
+        | (debug <exp>)
+```
+Adding the sugar expressions, there is also the following:
+```
+<exp> ::= (let ((<id> <exp>)) <exp>)
+        | (let-begin ((<id> <exp>)) <exp>*)
+        | (let-rec ((<id> <exp>)) <exp>)
+```
 In Addition to these base expressions, there are a couple of sugars to extend the language.
 ## Sugars
 ### Let
