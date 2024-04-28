@@ -423,7 +423,7 @@ Print debug format of value and return value.
 
 ## Analysis
 
-Most of the static analysis steps are repeats of interp without storing the actual value or computation, so only the differences will be discussed.
+Most of the static analysis steps are repeats of interp without storing the actual value or computation, so only the differences will be discussed. The primary purpose of the static analyzer is to check code for semantic errors. If a static analyzer can check for many different kinds of errors upfront, then the interpreter can make more assumptions about the program which can make it even more performant. Ex: Our interpreter does not perform borrow checking. It simply assumes all borrows are valid because they passed the borrow checker in the static analyzer.
 
 ### Environment
 
