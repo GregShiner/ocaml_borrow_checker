@@ -48,21 +48,59 @@ The code are seperated into two parts:
 
 The main file only contains some helper functions that tie the whole program together by reading the provided file and feeding it into the parser, then the expression tree to the analyzer, then finally it runs interp on the expression tree.
 
-## The Library:
-There are 3 components to the library: The parser, static analyzer, and interpreter.
+## The Library
+There are 3 components to the library: the parser, static analyzer, and interpreter.
 
 ### The Parser (lib/parse.ml)
 
-The parser takes in a string and using the Sexp library the strings are first parsed into `Sexp.Atom`s and `Sexp.List`s which are variants of the type: `Sexp.t`. <!-- TODO: Examples -->
-It then takes the tree of `Sexp.t`s and matches it to the various expressions in the grammar. This creates an `Exp.t` which is a type that contains the different variants of expressions.
+The parser takes in a string and using the Sexp library the strings are first parsed into `Sexp.Atom`s and `Sexp.List`s which are variants of the type: `Sexp.t`. Here is a quick example of how the s-exp, `(+ (* 5 3) 2)` would look as a structure of `Sexp.t`s:
+
+```ocaml
+Sexp.List [ Sexp.Atom "+"; Sexp.List [ Sexp.Atom "*"; Sexp.Atom "5"; Sexp.Atom "3"; ]; Sexp.Atom "2"; ]
+```
+
+It then takes the tree of `Sexp.t`s and matches it to the various expressions in the grammar. This creates an `Exp.t` which is a type that contains the different variants of expressions. This type is recursive and is used to represent the expression tree.
 
 > [!TIP]
 > Note the use of `t` as the name of a type in OCaml modules. This is a common convention when a module (notably here, Sexplib's `Sexp` module, and our `Exp` module) has a type that is core to its functionality. You will see this convention used in other areas of the code.
 
+Here is an example of an `Exp.t` structure using the previous example:
+
+```ocaml
+Exp.Plus { lhs = Exp.Mult { lhs = Exp.Num 5; rhs = Exp.Num 3; }; rhs = Exp.Num 2; }
+```
+
 ### The Analyzer
 
-The analyzer take in an expression tree and do a walk through of it, analyzing the code for errors such as usage of Moved values, doing it's job as the borrow checker, and type checking.
+The analyzer takes in an expression tree and does a walk through it, analyzing the code for errors such as usage of moved values, borrow checking, and type checking. It works extremely similarly to the interpreter but works with `AnalVal.t`s instead of `Value.t`s. The primary difference between these 2 types is that it doesn't keep track of actual data, such as numbers and booleans.
+
+Analyzer:
+```ocaml
+module AnalVal = struct
+  type t =
+  | Num
+  | Bool
+...
+end
+```
+
+Interpreter:
+```ocaml
+module AnalVal = struct
+  type t =
+  | Num of int
+  | Bool of bool
+...
+end
+```
+
+However, the other data types such as `Closure`s, `Box`s, and `Ref`s are unchanged. The idea of keeping the interpreter and analyzer similar stems from the fact that they both rely on the same mechanism of recursive descent.
 
 ### The Interpreter
 
-The interpreter take in an expression tree and walk through it while executing the code.
+The interpreter take in an expression tree and walks through it while executing the program. 
+It has some pretty basic checks for some errors that are mostly there to ensure all match arms are handled. 
+It relies on the guarantees that the static analyzer makes, pretty heavily. It does not check for things like invalid borrows or some type checking conditions.
+However, theoretically none of the errors should be reachable if they pass the static analyzer. This is, of course, assuming no bugs exist in the analyzer. 
+
+The interpreter functions by doing a recursive descent on the expression tree and passing back up `Value.t`s which contain the return values of functions. Following the previous example, interpreting `(+ (* 5 3) 2)` will produce, `Value.Num 17`.
