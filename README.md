@@ -70,7 +70,7 @@ Here is an example of an `Exp.t` structure using the previous example:
 Exp.Plus { lhs = Exp.Mult { lhs = Exp.Num 5; rhs = Exp.Num 3; }; rhs = Exp.Num 2; }
 ```
 
-### The Analyzer
+### The Analyzer (lib/analyze.ml)
 
 The analyzer takes in an expression tree and does a walk through it, analyzing the code for errors such as usage of moved values, borrow checking, and type checking. It works extremely similarly to the interpreter but works with `AnalVal.t`s instead of `Value.t`s. The primary difference between these 2 types is that it doesn't keep track of actual data, such as numbers and booleans.
 
@@ -96,7 +96,7 @@ end
 
 However, the other data types such as `Closure`s, `Box`s, and `Ref`s are unchanged. The idea of keeping the interpreter and analyzer similar stems from the fact that they both rely on the same mechanism of recursive descent.
 
-### The Interpreter
+### The Interpreter (lib/interp.ml)
 
 The interpreter take in an expression tree and walks through it while executing the program. 
 It has some pretty basic checks for some errors that are mostly there to ensure all match arms are handled. 
