@@ -86,7 +86,7 @@ end
 
 Interpreter:
 ```ocaml
-module AnalVal = struct
+module Value = struct
   type t =
   | Num of int
   | Bool of bool
