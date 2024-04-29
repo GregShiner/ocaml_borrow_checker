@@ -453,3 +453,27 @@ The static analysis step also checks the return type for the left hand side and 
 - `Exp.Mult`
   - Both must be numbers
 
+# Insight
+
+## Strength
+- LISP based language, easy to extend features
+- Ownerships, Fast memory clean up without the use of a garbage collector
+- Safe mutability with the borrow checker
+- Type safety, no suprises about what type a value is
+- Analyzer happens at compiles time, so interpetation is faster as it can make assumptions about the safety of the program.
+
+## Weakness
+- Gets stuck in an infinite loop when the analyzer runs into a recursive function (to be fixed)
+- Pretty small language with not many practical features
+
+## Improvements
+- Create a seperate intermediate representation for analyzing (High Level IR) and interpreting (Low Level IR) code
+  - Allow analysis of recursive functions
+    - `let-rec` form will be treated as a special form during analysis (HIR), but will be desugared when converting to LIR for interpretation
+  - Change interpreter to treat ref and mutref as the same thing as the analyzer already did a check, which increase speed.
+  - HIR = Larger Grammar, better for analyzing
+  - LIR = Smaler Grammer, faster for interpreting, less cases to check
+- Trim down interpreter
+  - Many unecessary checks left over from previous iterations that are now handled by the analyzer
+- Seperate out the build steps for parsing/analyzing and interpreting
+  - Compile once, run whenever
