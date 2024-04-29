@@ -455,7 +455,7 @@ The static analysis step also checks the return type for the left hand side and 
 
 # Insight
 
-## Strength
+## Strengths
 - LISP based language, easy to extend features
 - Ownerships, Fast memory clean up without the use of a garbage collector
 - Safe mutability with the borrow checker
@@ -477,3 +477,27 @@ The static analysis step also checks the return type for the left hand side and 
   - Many unecessary checks left over from previous iterations that are now handled by the analyzer
 - Seperate out the build steps for parsing/analyzing and interpreting
   - Compile once, run whenever
+
+# Demos
+All of the demos can be found in the `demos/` directory. The following screenshots are some select demos being ran using the `demo.sh` script.
+> [!IMPORTANT]
+> The `demo.sh` script uses the [bat](https://crates.io/crates/bat) program to get the fancy output. You can install bat if you have [Rust and Cargo installed](https://doc.rust-lang.org/cargo/getting-started/installation.html).
+> Simply run `cargo install bat`
+> If you don't want to do this, change
+> ```sh
+> bat -l list demos/$demo
+> ```
+> to
+> ```sh
+> cat demos/$demo
+> ```
+![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/7fbea689-01f4-49cd-adb6-27a4876831be)
+![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/a569fcb6-3b2c-4381-b439-5ed157262acc)
+![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/ca406cac-6724-4287-8d6a-cc2ec62293ea)
+![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/e2769438-91e7-4986-836b-25ec96be2ee6)
+![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/8bd9b6f8-fe78-4396-85c7-0202664e7b7a)
+![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/4d5c9a06-0724-420d-9477-73697c83cc38)
+![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/e5aea931-ae79-412d-9435-7b688534cde5)
+![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/856510bf-6126-422a-bade-e5e3414b06e2)
+![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/561427b7-51f2-4de9-a22b-9a4553fb6f31)
+![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/a7621bcb-48c9-49ea-9af3-bb938cd57152)
