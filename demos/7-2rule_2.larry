@@ -1,0 +1,4 @@
+(let ((x (box 5)))
+    (let ((ref (& x)))
+        (let ((y x))
+            (unbox x))))
