@@ -256,12 +256,14 @@ In order for these references to be valid, they must pass a set of rules defined
 All programs must follow these 2 rules:
 - At any given time, you can have either one mutable reference or any number of immutable references.
 - References must always be valid.
+
 Notice that these are the exact same rules as defined [here](https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html#the-rules-of-references) in the rust book.
 
 ### Reference creation restrictions
 Let's break down what these 2 rules mean. The first one means, in our language specifically, you can either have
 - One mutable reference
 - Any number of immutable references
+
 bound on the stack at any given time. This means that you can have multiple mutable references to any given value, so long as they do not ever exist in the same scope.
 
 There actually is one notable difference here between this language and Rust. Rust defines that the scope of a reference is between when it is created, and the last time it is used, NOT the end of its lexical scope. 
@@ -282,11 +284,11 @@ fn main() {
 ```
 is a completely valid program. However, in this language, an equivalent program will not pass the analyzer.
 ```lisp
-(let ((x (box 5)))
+(let ((x (box 5)))                 ; Create a value in the store
     (let ((ref1 (& x)))            ; Create an immutable reference to x
         (let-begin ((ref2 (& x)))  ; Create another immutable reference to x
             (display (@ ref1))     ; Display the value stored at ref1
-            (display (@ ref2))     ; Display the value stored at ref1
+            (display (@ ref2))     ; Display the value stored at ref2
             (let ((ref3 (! x)))    ; Create a mutable reference to x; ERROR: Cannot create a mutable reference while an immutable reference exists
                 (display (@ ref3))))))
 ```
@@ -294,12 +296,10 @@ This program will not pass the analyzer because ref3 (a mutable reference) is cr
 
 ### Reference Validity
 The next rule is a bit more vague, "References must always be valid." In this language, this simply means that you cannot dereference a reference to a moved value. Practically, this is actually consistent with Rust's definition of reference scoping (a reference's scope ends after it is last used). But in our language, under the hood, a reference to a moved value *can* exist, however, it cannot be used, so it doesn't really matter, since this error will always be caught by the analyzer.
-> [!CAUTION]
-> At the time of writing, this check does not always work and will be fixed soon.
 
 For example, the following code is invalid:
 ```lisp
-(let ((x (box 5)))      ; Allocate x on the heap
+(let ((x (box 5)))      ; Create a value in the store
     (let ((ref (& x)))  ; Create a reference to x
         (let ((y x))    ; Move x into y (x is no longer valid)
             (@ ref))))  ; Dereference the reference to x; ERROR: Cannot dereference a reference to a moved value
@@ -481,6 +481,7 @@ The following screenshots are some select demos being ran using the `demo.sh` sc
 > The `demo.sh` script optionally uses the [bat](https://crates.io/crates/bat) program to get syntax highlighted output. You can install bat if you have [Rust and Cargo installed](https://doc.rust-lang.org/cargo/getting-started/installation.html).
 > Simply run `cargo install bat`
 > If you don't have the bat command, the demo script will just use `cat` instead.
+
 ![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/7fbea689-01f4-49cd-adb6-27a4876831be)
 ![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/a569fcb6-3b2c-4381-b439-5ed157262acc)
 ![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/ca406cac-6724-4287-8d6a-cc2ec62293ea)
