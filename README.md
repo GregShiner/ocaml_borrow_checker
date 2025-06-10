@@ -5,7 +5,7 @@ If you cannot use dune, try running the following command, and maybe put it in y
 ```sh
 eval $(opam env)
 ```
-This step should be taken care of however, if you answered "yes" to when `opam init` asked if you would like it to put the OCaml tools in your PATH.
+This step should not be necessary, if you answered "yes" to when `opam init` asked if you would like it to put the OCaml tools in your PATH.
 If however, this doesn't work, or you don't want to add the tools to your PATH, you can use dune and other tool commands with:
 ```sh
 opam exec -- [CMD]
@@ -22,7 +22,7 @@ If you would like to use the application as a binary, run the following command 
 ```sh
 dune build
 ```
-This will emit a binary file at `_build/default/bin/main.exe` (Yes, it does emit a file with the `.exe` extension even on linux, despite it being a normal linux executable)
+This will emit a binary file at `_build/default/bin/main.exe` (Yes, it does emit a file with the `.exe` extension even on Linux, despite it being a normal Linux executable)
 This executable does not rely on any files so it can be safely copied to anywhere you would like. Execute a program with the following command:
 ```sh
 main.exe <input file>
@@ -34,19 +34,15 @@ If you would like to instead build and immediately execute the program with , yo
 dune exec ocaml_borrow_checker -- <input file>
 ```
 
-<!--
-TODO: Output examples and explaination
--->
-
 # Outline
 
-The code are seperated into two parts:
+The code are separated into two parts:
 - The main file (bin/main.ml)
 - The library (lib/)
 
 ## Main file
 
-The main file only contains some helper functions that tie the whole program together by reading the provided file and feeding it into the parser, then the expression tree to the analyzer, then finally it runs interp on the expression tree.
+The main file only contains some helper functions that tie the whole program together by reading the provided file and feeding it into the parser, then the expression tree to the analyzer, then finally it runs the interpreter on the expression tree.
 
 ## The Library
 There are 3 components to the library: the parser, static analyzer, and interpreter.
@@ -107,7 +103,7 @@ The interpreter functions by doing a recursive descent on the expression tree an
 
 # Language
 This program was written in OCaml and uses Jane Street's `Sexplib` [library](https://github.com/janestreet/sexplib) for s-exp handling.
-The language is a heavily modified version of the Curly language from Matt Flatt's Utah CS 3520 course found [here](https://my.eng.utah.edu/~cs3520/f19/). The memory mangement system was inspired by Rust's memory model. It implements borrows and moves in a similar fashion to Rust. 
+The language is a heavily modified version of the Curly language from Matt Flatt's Utah CS 3520 course found [here](https://my.eng.utah.edu/~cs3520/f19/). The memory management system was inspired by Rust's memory model. It implements borrows and moves in a similar fashion to Rust. 
 ## Full Expression Tree
 The following is an excerpt from `lib/parse.ml`
 ```ocaml
@@ -299,7 +295,7 @@ This program will not pass the analyzer because ref3 (a mutable reference) is cr
 ### Reference Validity
 The next rule is a bit more vague, "References must always be valid." In this language, this simply means that you cannot dereference a reference to a moved value. Practically, this is actually consistent with Rust's definition of reference scoping (a reference's scope ends after it is last used). But in our language, under the hood, a reference to a moved value *can* exist, however, it cannot be used, so it doesn't really matter, since this error will always be caught by the analyzer.
 > [!CAUTION]
-> At the time of writting, this check does not always work and will be fixed soon.
+> At the time of writing, this check does not always work and will be fixed soon.
 
 For example, the following code is invalid:
 ```lisp
@@ -311,11 +307,11 @@ For example, the following code is invalid:
 
 # Interpretation and Analysis
 
-## Store and Enviroment
+## Store and Environment
 
 The store is a hash table with the key being an integer which functions as a pseudo location in memory, which allows for mutations of declared variables.
 
-The enviroment is also a hash table which map variables, a.k.a symbols, to its declared value.
+The environment is also a hash table which map variables, a.k.a symbols, to its declared value.
 
 The values in both the store and environment are `Value.t`s. (during analysis, `AnalVal.t`s are used. See Outline -> Main file -> The Analyzer.)
 ```ocaml
@@ -351,15 +347,15 @@ The `lookup` helper function is called which gets the value of the symbol from t
 
 ### Exp.Plus
 
-Interp the left and right hand side of the expression and add them together.
+Interpret the left and right hand side of the expression and add them together.
 
 ### Exp.Mult
 
-Interp the left and right hand side of the expression and multiply them together.
+Interpret the left and right hand side of the expression and multiply them together.
 
 ### Exp.Eq
 
-Interp the left and right hand side of the expression and return true if they are the same, false otherwise.
+Interpret the left and right hand side of the expression and return true if they are the same, false otherwise.
 
 ### Exp.Lambda
 
@@ -373,29 +369,29 @@ There is three parts to this operation, which occur at different stages of the e
 (Func Arg)
 ```
 
-The first is interping the `Func` which is being applied. If `Func` does not return a `Closure` then a "Not a function" error is thrown.
+The first is interpreting the `Func` which is being applied. If `Func` does not return a `Closure` then a "Not a function" error is thrown.
 
-Then `Arg` is interped, it is the value mapped to the symbol inside the Closure. The mapping of the value inside the environment of the closure is done via a helper function `move_symbol`. It checks if `Arg` is a symbol, and if its value is a  `Value.Box` inside the current environment. If it is, it will change that symbol to a `Moved` value. Then the `Arg` is mapped to the symbol inside the environment of `Closure`.
+Then `Arg` is interpreting, it is the value mapped to the symbol inside the Closure. The mapping of the value inside the environment of the closure is done via a helper function `move_symbol`. It checks if `Arg` is a symbol, and if its value is a  `Value.Box` inside the current environment. If it is, it will change that symbol to a `Moved` value. Then the `Arg` is mapped to the symbol inside the environment of `Closure`.
 
-Finally, the body of the `Func` is interped with the new binding, and before its value is returned, a clean up operation will occur. This will check whether the return value is a `Value.Box` and if it is the same `Value.Box` as the `Arg`. If it is not then it removes the value inside store.
+Finally, the body of the `Func` is interpreted with the new binding, and before its value is returned, a clean up operation will occur. This will check whether the return value is a `Value.Box` and if it is the same `Value.Box` as the `Arg`. If it is not then it removes the value inside store.
 
 ### Exp.If
 
-Interp the condition and if it is true then return the interped value of left handside, otherwise return the interped value of right handside.
+Interpret the condition and if it is true then return the interpreted value of left hand-side, otherwise return the interpreted value of right hand-side.
 
 ### Exp.Begin
 
-Fold left is used to interpret the list of expressions, with the same environment, which allow for mutation of the environment to be shared across all interp calls within the `Begin`.
+Fold left is used to interpret the list of expressions, with the same environment, which allow for mutation of the environment to be shared across all interpret calls within the `Begin`.
 
-Mutation of environment is needed for checking when a value is moved and to prevent its useage.
+Mutation of environment is needed for checking when a value is moved and to prevent its usage.
 
 ### Exp.Box
 
-Return a `Value.Box` with the location in store that is mapped to the interped value. To determine the location to store the value at, it will do a linear search across the store to find the next available location in the store by integer.
+Return a `Value.Box` with the location in store that is mapped to the interpreted value. To determine the location to store the value at, it will do a linear search across the store to find the next available location in the store by integer.
 
 ### Exp.Unbox
 
-Return the value inside store that `Value.Box` pointed to, throw error if theres nothing at the location.
+Return the value inside store that `Value.Box` pointed to, throw error if there's nothing at the location.
 
 ### Exp.Ref
 
@@ -423,11 +419,11 @@ Print debug format of value and return value.
 
 ## Analysis
 
-Most of the static analysis steps are repeats of interp without storing the actual value or computation, so only the differences will be discussed. The primary purpose of the static analyzer is to check code for semantic errors. If a static analyzer can check for many different kinds of errors upfront, then the interpreter can make more assumptions about the program which can make it even more performant. Ex: Our interpreter does not perform borrow checking. It simply assumes all borrows are valid because they passed the borrow checker in the static analyzer.
+Most of the static analysis steps are repeats of the interpret step without storing the actual value or computation, so only the differences will be discussed. The primary purpose of the static analyzer is to check code for semantic errors. If a static analyzer can check for many different kinds of errors upfront, then the interpreter can make more assumptions about the program which can make it even more performant. Ex: Our interpreter does not perform borrow checking. It simply assumes all borrows are valid because they passed the borrow checker in the static analyzer.
 
 ### Environment
 
-In analysis, the environment is a tree structure instead of of a flat hashtable, this allows for changes of earlier environments to be reflected in subsequence analysis calls deeper down the syntax tree and prevent usage of moved values. 
+In analysis, the environment is a tree structure instead of of a flat hash table, this allows for changes of earlier environments to be reflected in subsequence analysis calls deeper down the syntax tree and prevent usage of moved values. 
 
 ### Borrow checker
 
@@ -459,38 +455,32 @@ The static analysis step also checks the return type for the left hand side and 
 - LISP based language, easy to extend features
 - Ownerships, Fast memory clean up without the use of a garbage collector
 - Safe mutability with the borrow checker
-- Type safety, no suprises about what type a value is
-- Analyzer happens at compiles time, so interpetation is faster as it can make assumptions about the safety of the program.
+- Type safety, no surprises about what type a value is
+- Analyzer happens at compiles time, so interpretation is faster as it can make assumptions about the safety of the program.
 
 ## Weakness
 - Gets stuck in an infinite loop when the analyzer runs into a recursive function (to be fixed)
 - Pretty small language with not many practical features
 
 ## Improvements
-- Create a seperate intermediate representation for analyzing (High Level IR) and interpreting (Low Level IR) code
+- Create a separate intermediate representation for analyzing (High Level IR) and interpreting (Low Level IR) code
   - Allow analysis of recursive functions
     - `let-rec` form will be treated as a special form during analysis (HIR), but will be desugared when converting to LIR for interpretation
   - Change interpreter to treat ref and mutref as the same thing as the analyzer already did a check, which increase speed.
   - HIR = Larger Grammar, better for analyzing
-  - LIR = Smaler Grammer, faster for interpreting, less cases to check
+  - LIR = Smaller Grammar, faster for interpreting, less cases to check
 - Trim down interpreter
-  - Many unecessary checks left over from previous iterations that are now handled by the analyzer
-- Seperate out the build steps for parsing/analyzing and interpreting
+  - Many unnecessary checks left over from previous iterations that are now handled by the analyzer
+- Separate out the build steps for parsing/analyzing and interpreting
   - Compile once, run whenever
 
 # Demos
-All of the demos can be found in the `demos/` directory. The following screenshots are some select demos being ran using the `demo.sh` script.
-> [!IMPORTANT]
-> The `demo.sh` script uses the [bat](https://crates.io/crates/bat) program to get the fancy output. You can install bat if you have [Rust and Cargo installed](https://doc.rust-lang.org/cargo/getting-started/installation.html).
+All of the demos can be found in the `demos/` directory. There is also a `demo.sh` script that simply runs each demo in order. 
+The following screenshots are some select demos being ran using the `demo.sh` script.
+> [!NOTE]
+> The `demo.sh` script optionally uses the [bat](https://crates.io/crates/bat) program to get syntax highlighted output. You can install bat if you have [Rust and Cargo installed](https://doc.rust-lang.org/cargo/getting-started/installation.html).
 > Simply run `cargo install bat`
-> If you don't want to do this, change
-> ```sh
-> bat -l list demos/$demo
-> ```
-> to
-> ```sh
-> cat demos/$demo
-> ```
+> If you don't have the bat command, the demo script will just use `cat` instead.
 ![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/7fbea689-01f4-49cd-adb6-27a4876831be)
 ![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/a569fcb6-3b2c-4381-b439-5ed157262acc)
 ![image](https://github.com/GregShiner/ocaml_borrow_checker/assets/3160083/ca406cac-6724-4287-8d6a-cc2ec62293ea)
